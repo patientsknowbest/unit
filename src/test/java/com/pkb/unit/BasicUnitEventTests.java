@@ -43,5 +43,7 @@ public class BasicUnitEventTests {
         registry.events().subscribe(System.out::println);
         registry.sink().accept(ImmutableUnicastMessageWithPayload.<Command>builder().target("someDBClientCode").messageType(Command.class).payload(Command.START).build());
         Thread.sleep(5000);
+        registry.sink().accept(ImmutableUnicastMessageWithPayload.<Command>builder().target("databaseConnection").messageType(Command.class).payload(Command.STOP).build());
+        Thread.sleep(3000);
     }
 }
