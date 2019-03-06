@@ -1,12 +1,14 @@
 package com.pkb.unit;
 
-import io.reactivex.annotations.Nullable;
 import org.immutables.value.Value;
 
+import java.io.Serializable;
+import java.util.Optional;
+
 @Value.Immutable
-public interface Transition {
+public interface Transition extends Serializable {
     State current();
     State previous();
     String id();
-    @Nullable String comment();
+    Optional<String> comment();
 }

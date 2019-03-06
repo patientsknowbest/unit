@@ -28,9 +28,18 @@ public abstract class Unit {
     );
 
 
-    String id() { return id; }
-    State state() { return state; }
-    Registry owner() { return owner; }
+    String id() {
+        return id;
+    }
+
+    State state() {
+        return state;
+    }
+
+    Registry owner() {
+        return owner;
+    }
+
     private Map<String, State> mandatoryDependencies = new ConcurrentHashMap<>();
 
     public Unit(String id, Registry owner) {
@@ -38,20 +47,23 @@ public abstract class Unit {
         this.state = CREATED;
         this.owner = owner;
         commandSubscription = owner.events()
-                .filter(e -> e instanceof CommandEvent)
-                .map(e -> (CommandEvent) e)
-                .filter(e -> Objects.equals(id, e.targetId()))
+                .filter(e -> e instanceof UnicastMessageWithPayload)
+                .map(e -> (UnicastMessageWithPayload)e)
+                .filter(e -> e.messageType() == Command.class)
+                .filter(e -> e.target() == id)
                 .observeOn(Schedulers.computation())
-                .subscribe(ce -> handle(ce.value()));
+                .subscribe(ee -> handle((Command)ee.payload()));
         dependenciesSubscription = owner.events()
-                .filter(e -> e instanceof TransitionEvent)
-                .map(e -> (TransitionEvent) e)
+                .filter(e -> e instanceof MessageWithPayload)
+                .map(e -> (MessageWithPayload)e)
+                .filter(e -> e.messageType() == Transition.class)
                 .observeOn(Schedulers.computation())
-                .subscribe(te -> handleDependencyTransition(te.value()));
+                .subscribe(te -> handleDependencyTransition((Transition) te.payload()));
         reportStateSubscription = owner.events()
-                .filter(e -> e instanceof ReportStateEvent)
-                .map(e -> (ReportStateEvent) e)
-                .filter(e -> Objects.equals(id, e.value()))
+                .filter(e -> e instanceof UnicastMessage)
+                .map(e -> (UnicastMessage)e)
+                .filter(e -> e.messageType() == ReportStateRequest.class)
+                .filter(e -> Objects.equals(id, e.target()))
                 .observeOn(Schedulers.computation())
                 .subscribe(ce -> handleReportState());
 
@@ -85,7 +97,7 @@ public abstract class Unit {
         State ret = mandatoryDependencies.put(dependency, UNKNOWN);
         // ask for the current state
         try {
-            owner.sink().accept(ImmutableReportStateEvent.builder().value(id).build());
+            owner.sink().accept(ImmutableUnicastMessage.<ReportStateRequest>builder().messageType(ReportStateRequest.class).target(dependency).build());
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -118,6 +130,7 @@ public abstract class Unit {
 
     private interface CommandHandler {
         boolean handles(Command c);
+
         void handle(Command c);
     }
 
@@ -155,7 +168,7 @@ public abstract class Unit {
 
         @Override
         public void handle(Command c) {
-           setAndPublishState(STOPPING);
+            setAndPublishState(STOPPING);
             HandleOutcome outcome = handleStop();
             if (outcome == HandleOutcome.SUCCESS) {
                 setAndPublishState(STOPPED);
@@ -169,6 +182,7 @@ public abstract class Unit {
     private void setAndPublishState(State state) {
         setAndPublishState(state, "");
     }
+
     private void setAndPublishState(State state, String comment) {
         try {
             this.owner.sink().accept(makeTE(this.state, state));
@@ -199,27 +213,29 @@ public abstract class Unit {
     }
 
     abstract HandleOutcome handleStart();
+
     abstract HandleOutcome handleStop();
 
     // utility
-    private TransitionEvent makeTE(State previous, State current) {
+    private MessageWithPayload<Transition>  makeTE(State previous, State current) {
         return makeTE(previous, current, "");
     }
-    private TransitionEvent makeTE(State previous, State current, String comment) {
-        return ImmutableTransitionEvent.builder()
-                .value(
-                        ImmutableTransition.builder()
-                                .previous(previous)
-                                .current(current)
-                                .comment(comment)
-                                .id(id)
-                                .build())
+
+    private MessageWithPayload<Transition> makeTE(State previous, State current, String comment) {
+        return ImmutableMessageWithPayload
+                .<Transition>builder().payload(ImmutableTransition.builder()
+                        .previous(previous)
+                        .current(current)
+                        .comment(comment)
+                        .id(id)
+                        .build())
+                .messageType(Transition.class)
                 .build();
     }
 
     private void sendCommand(String id, Command command) {
         try {
-            owner.sink().accept(ImmutableCommandEvent.builder().targetId(id).value(command).build());
+            owner.sink().accept(ImmutableUnicastMessageWithPayload.<Command>builder().messageType(Command.class).target(id).payload(command).build());
         } catch (Exception e) {
             throw new RuntimeException(e);
         }

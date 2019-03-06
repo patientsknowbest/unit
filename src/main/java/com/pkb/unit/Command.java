@@ -1,5 +1,7 @@
 package com.pkb.unit;
 
-public enum Command {
-    START, STOP, SHUTDOWN, REPORTSTATE
+import java.io.Serializable;
+
+public enum Command implements Serializable {
+    START, STOP, SHUTDOWN
 }

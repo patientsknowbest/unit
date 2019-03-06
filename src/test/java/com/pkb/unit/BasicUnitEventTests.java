@@ -41,7 +41,7 @@ public class BasicUnitEventTests {
         FakeUnit a2 = new FakeUnit("databaseConnection", registry);
         a1.addDependency("databaseConnection");
         registry.events().subscribe(System.out::println);
-        registry.sink().accept(ImmutableCommandEvent.builder().targetId("someDBClientCode").value(Command.START).build());
+        registry.sink().accept(ImmutableUnicastMessageWithPayload.<Command>builder().target("someDBClientCode").messageType(Command.class).payload(Command.START).build());
         Thread.sleep(5000);
     }
 }

@@ -6,15 +6,15 @@ import io.reactivex.functions.Consumer;
 
 public class LocalRegistry implements Registry {
 
-    private PublishRelay<Event<?>> events = PublishRelay.create();
+    private PublishRelay<Message> events = PublishRelay.create();
 
     @Override
-    public Consumer<Event<?>> sink() {
+    public Consumer<Message> sink() {
         return events;
     }
 
     @Override
-    public Observable<Event<?>> events() {
+    public Observable<Message> events() {
         return events;
     }
 }
