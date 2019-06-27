@@ -1,0 +1,4 @@
+/*com.pkb.unit.BasicUnitEventTests.startCommandTransitionsSingleUnitToStarting*/
+digraph { 
+unit1 [label="unit1 STARTING"]
+}

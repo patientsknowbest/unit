@@ -25,6 +25,7 @@ public abstract class Unit {
     private final Disposable commandSubscription;
     private final Disposable dependenciesSubscription;
     private final Disposable reportStateSubscription;
+    private final Disposable reportDependenciesSubscription;
     private State state;
     private final Registry owner;
 
@@ -57,7 +58,7 @@ public abstract class Unit {
                 .filter(e -> e instanceof UnicastMessageWithPayload)
                 .map(e -> (UnicastMessageWithPayload)e)
                 .filter(e -> e.messageType() == Command.class)
-                .filter(e -> e.target() == id)
+                .filter(e -> Objects.equals(id, e.target()))
                 .observeOn(Schedulers.computation())
                 .subscribe(ee -> handle((Command)ee.payload()));
         dependenciesSubscription = owner.events()
@@ -73,7 +74,35 @@ public abstract class Unit {
                 .filter(e -> Objects.equals(id, e.target()))
                 .observeOn(Schedulers.computation())
                 .subscribe(ce -> handleReportState());
-        owner.register(this);
+        reportDependenciesSubscription = owner.events()
+                .filter(UnicastMessage.class::isInstance)
+                .map(UnicastMessage.class::cast)
+                .filter(msg -> msg.messageType() == ReportDependenciesRequest.class)
+                .filter(msg -> Objects.equals(id, msg.target()))
+                .observeOn(Schedulers.computation())
+                .subscribe(msg -> handleReportDependencies());
+        try {
+            owner.sink().accept(ImmutableMessageWithPayload.<NewUnit>builder()
+                    .messageType(NewUnit.class)
+                    .payload(ImmutableNewUnit.builder().id(id).build()).build());
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+
+    }
+
+    private void handleReportDependencies() {
+        try {
+            owner.sink().accept(ImmutableMessageWithPayload.<Dependencies>builder()
+                    .messageType(Dependencies.class)
+                    .payload(ImmutableDependencies.builder()
+                                .id(id)
+                                .dependencies(mandatoryDependencies)
+                                .build())
+                    .build());
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 
     private void handleReportState() {
@@ -154,9 +183,10 @@ public abstract class Unit {
             setAndPublishState(STARTING);
             if (!allDepsHaveStarted()) {
                 // this could be better
-                mandatoryDependencies.keySet().stream().forEach(dep -> sendCommand(dep, START));
+                mandatoryDependencies.keySet().forEach(dep -> sendCommand(dep, START));
                 return;
             }
+
             HandleOutcome outcome = handleStart();
             if (outcome == HandleOutcome.SUCCESS) {
                 setAndPublishState(STARTED);
@@ -212,6 +242,7 @@ public abstract class Unit {
             commandSubscription.dispose();
             dependenciesSubscription.dispose();
             reportStateSubscription.dispose();
+            reportDependenciesSubscription.dispose();
         }
     }
 
