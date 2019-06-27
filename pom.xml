@@ -13,6 +13,7 @@
         <rxjava.version>2.2.7</rxjava.version>
         <vavr.version>0.10.0</vavr.version>
         <rxrelay.version>2.1.0</rxrelay.version>
+        <approvalcrest.version>0.21</approvalcrest.version>
     </properties>
     <dependencies>
         <dependency>
@@ -42,6 +43,12 @@
             <groupId>io.vavr</groupId>
             <artifactId>vavr</artifactId>
             <version>${vavr.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>com.github.karsaig</groupId>
+            <artifactId>approvalcrest</artifactId>
+            <version>${approvalcrest.version}</version>
+            <scope>test</scope>
         </dependency>
 
     </dependencies>
