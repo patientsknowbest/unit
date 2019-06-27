@@ -1,16 +1,23 @@
 package com.pkb.unit;
 
-import io.reactivex.disposables.Disposable;
-import io.reactivex.schedulers.Schedulers;
-import io.vavr.collection.List;
+import static com.pkb.unit.Command.START;
+import static com.pkb.unit.Command.STOP;
+import static com.pkb.unit.State.CREATED;
+import static com.pkb.unit.State.FAILED;
+import static com.pkb.unit.State.SHUTDOWN;
+import static com.pkb.unit.State.STARTED;
+import static com.pkb.unit.State.STARTING;
+import static com.pkb.unit.State.STOPPED;
+import static com.pkb.unit.State.STOPPING;
+import static com.pkb.unit.State.UNKNOWN;
 
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 
-import static com.pkb.unit.Command.*;
-import static com.pkb.unit.State.*;
-import static com.pkb.unit.State.SHUTDOWN;
+import io.reactivex.disposables.Disposable;
+import io.reactivex.schedulers.Schedulers;
+import io.vavr.collection.List;
 
 public abstract class Unit {
 
@@ -66,7 +73,7 @@ public abstract class Unit {
                 .filter(e -> Objects.equals(id, e.target()))
                 .observeOn(Schedulers.computation())
                 .subscribe(ce -> handleReportState());
-
+        owner.register(this);
     }
 
     private void handleReportState() {
@@ -241,4 +248,7 @@ public abstract class Unit {
         }
     }
 
+    public Map<String, State> dependencies() {
+        return mandatoryDependencies;
+    }
 }

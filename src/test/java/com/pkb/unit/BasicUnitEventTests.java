@@ -1,5 +1,9 @@
 package com.pkb.unit;
 
+import static com.github.karsaig.approvalcrest.MatcherAssert.assertThat;
+import static com.github.karsaig.approvalcrest.matcher.Matchers.sameContentAsApproved;
+import static com.pkb.unit.DOT.toDOTFormat;
+
 import org.junit.Test;
 
 public class BasicUnitEventTests {
@@ -45,5 +49,14 @@ public class BasicUnitEventTests {
         Thread.sleep(5000);
         registry.sink().accept(ImmutableUnicastMessageWithPayload.<Command>builder().target("databaseConnection").messageType(Command.class).payload(Command.STOP).build());
         Thread.sleep(3000);
+    }
+
+    @Test
+    public void testToGraph() {
+        LocalRegistry registry = new LocalRegistry();
+        FakeUnit a1 = new FakeUnit("someDBClientCode", registry);
+        FakeUnit a2 = new FakeUnit("databaseConnection", registry);
+        a1.addDependency("databaseConnection");
+        assertThat(toDOTFormat(registry), sameContentAsApproved());
     }
 }
