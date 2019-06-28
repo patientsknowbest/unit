@@ -1,6 +1,0 @@
-/*com.pkb.unit.BasicUnitEventTests.testToGraph*/
-digraph { 
-someDBClientCode [label="someDBClientCode CREATED"]
-someDBClientCode -> databaseConnection [label="CREATED"]
-databaseConnection [label="databaseConnection CREATED"]
-}
