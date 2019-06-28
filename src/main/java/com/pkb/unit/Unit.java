@@ -54,13 +54,19 @@ public abstract class Unit {
         this.id = id;
         this.state = CREATED;
         this.owner = owner;
+        // Commands might result in IO bound operations, e.g.
+        // opening a database connection or connecting to an HTTP API.
+        // Use the io() scheduler for this reason
         commandSubscription = owner.events()
                 .filter(e -> e instanceof UnicastMessageWithPayload)
                 .map(e -> (UnicastMessageWithPayload)e)
                 .filter(e -> e.messageType() == Command.class)
                 .filter(e -> Objects.equals(id, e.target()))
-                .observeOn(Schedulers.computation())
+                .observeOn(Schedulers.io())
                 .subscribe(ee -> handle((Command)ee.payload()));
+
+        // Handling transitions & reporting state should _not_ do any IO work.
+        // so we can execute these with the io() scheduler.
         dependenciesSubscription = owner.events()
                 .filter(e -> e instanceof MessageWithPayload)
                 .map(e -> (MessageWithPayload)e)
