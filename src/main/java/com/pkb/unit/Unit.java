@@ -27,7 +27,7 @@ public abstract class Unit {
     private final Disposable reportStateSubscription;
     private final Disposable reportDependenciesSubscription;
     private State state;
-    private final Registry owner;
+    private final Bus owner;
 
     private final List<CommandHandler> commandHandlers = List.of(
             new StartHandler(),
@@ -44,13 +44,13 @@ public abstract class Unit {
         return state;
     }
 
-    Registry owner() {
+    Bus owner() {
         return owner;
     }
 
     private Map<String, State> mandatoryDependencies = new ConcurrentHashMap<>();
 
-    public Unit(String id, Registry owner) {
+    public Unit(String id, Bus owner) {
         this.id = id;
         this.state = CREATED;
         this.owner = owner;

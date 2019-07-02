@@ -10,11 +10,11 @@ public class BasicUnitEventTests {
     @Test
     public void initialStateIsCreated() throws Exception {
         // GIVEN
-        Registry registry = new LocalRegistry();
+        Bus bus = new LocalBus();
         // WHEN
-        new FakeUnit("unit1", registry);
+        new FakeUnit("unit1", bus);
         // THEN
-        assertRegistry(registry);
+        assertRegistry(bus);
     }
 
 }

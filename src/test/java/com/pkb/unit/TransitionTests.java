@@ -15,13 +15,13 @@ public class TransitionTests {
     @Test
     public void startCommandTransitionsSingleUnitToStarting() throws Exception {
         // GIVEN
-        Registry registry = new LocalRegistry();
+        Bus bus = new LocalBus();
         String unitID = "unit1";
-        new FakeUnit(unitID, registry);
-        TestObserver<Message> testTransitionObserver = testTransitionObserver(registry);
+        new FakeUnit(unitID, bus);
+        TestObserver<Message> testTransitionObserver = testTransitionObserver(bus);
 
         // WHEN
-        registry.sink().accept(command(unitID, Command.START));
+        bus.sink().accept(command(unitID, Command.START));
 
         // THEN
         testTransitionObserver
@@ -29,11 +29,11 @@ public class TransitionTests {
                 .assertValues(
                         transitionMessage(unitID, State.CREATED, State.STARTING, "")
                 );
-        assertRegistry(registry);
+        assertRegistry(bus);
     }
 
-    private TestObserver<Message> testTransitionObserver(Registry registry) {
-        return registry.events()
+    private TestObserver<Message> testTransitionObserver(Bus bus) {
+        return bus.events()
                 .filter(it -> it.messageType().equals(Transition.class))
                 .test();
     }
@@ -42,14 +42,14 @@ public class TransitionTests {
     @Test
     public void startCommandTransitionsUnitToStarting() throws Exception {
         // GIVEN
-        Registry registry = new LocalRegistry();
+        Bus bus = new LocalBus();
         String unit1ID = "unit1";
         String unit2ID = "unit2";
-        FakeUnit unit1 = new FakeUnit(unit1ID, registry);
-        FakeUnit unit2 = new FakeUnit(unit2ID, registry);
+        FakeUnit unit1 = new FakeUnit(unit1ID, bus);
+        FakeUnit unit2 = new FakeUnit(unit2ID, bus);
 
         // WHEN
-        TestObserver<Message> transitionObserver1 = testTransitionObserver(registry);
+        TestObserver<Message> transitionObserver1 = testTransitionObserver(bus);
         unit1.addDependency(unit2ID);
         // THEN
         transitionObserver1.awaitCount(1)
@@ -57,8 +57,8 @@ public class TransitionTests {
                 .dispose();
 
         // WHEN
-        TestObserver<Message> transitionObserver2 = testTransitionObserver(registry);
-        registry.sink().accept(command(unit1ID, Command.START));
+        TestObserver<Message> transitionObserver2 = testTransitionObserver(bus);
+        bus.sink().accept(command(unit1ID, Command.START));
 
         // THEN
         transitionObserver2
@@ -67,7 +67,7 @@ public class TransitionTests {
                         transitionMessage(unit1ID, State.CREATED, State.STARTING, ""),
                         transitionMessage(unit2ID, State.CREATED, State.STARTING, "")
                 ).dispose();
-        assertRegistry(registry);
+        assertRegistry(bus);
     }
 
     private UnicastMessageWithPayload<Command> command(String targetUnitId, Command start) {

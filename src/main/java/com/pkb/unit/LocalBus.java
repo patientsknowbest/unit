@@ -12,12 +12,12 @@ import io.reactivex.disposables.Disposable;
 import io.reactivex.functions.Consumer;
 import io.reactivex.schedulers.Schedulers;
 
-public class LocalRegistry implements Registry, Closeable {
+public class LocalBus implements Bus, Closeable {
     private PublishRelay<Message> events = PublishRelay.create();
     private List<String> units = new ArrayList<>();
     private Disposable newUnitsSubscription;
 
-    public LocalRegistry() {
+    public LocalBus() {
         newUnitsSubscription = events.filter(MessageWithPayload.class::isInstance)
                 .map(MessageWithPayload.class::cast)
                 .filter(msg -> msg.messageType() == NewUnit.class)

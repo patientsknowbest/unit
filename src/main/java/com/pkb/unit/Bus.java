@@ -6,11 +6,11 @@ import io.reactivex.Observable;
 import io.reactivex.functions.Consumer;
 
 /**
- * Registry
+ * Bus
  * This class serves 2 functions: it provides a communication channel
  * for units to communicate. It also keeps a list of all units IDs
  */
-public interface Registry {
+public interface Bus {
 
     /**
      *

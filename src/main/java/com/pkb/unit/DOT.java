@@ -12,16 +12,16 @@ import io.reactivex.observers.TestObserver;
  * https://graphviz.gitlab.io/_pages/doc/info/lang.html
  */
 public class DOT {
-    public static String toDOTFormat(Registry registry) {
-        List<String> units = registry.units();
+    public static String toDOTFormat(Bus bus) {
+        List<String> units = bus.units();
 
-        TestObserver<Transition> statesTestObserver = registry.events()
+        TestObserver<Transition> statesTestObserver = bus.events()
                 .filter(MessageWithPayload.class::isInstance).map(MessageWithPayload.class::cast)
                 .filter(msg -> msg.messageType().equals(Transition.class))
                 .map(msg -> (Transition) msg.payload())
                 .test();
 
-        TestObserver<Dependencies> dependenciesTestObserver = registry.events()
+        TestObserver<Dependencies> dependenciesTestObserver = bus.events()
                 .filter(MessageWithPayload.class::isInstance).map(MessageWithPayload.class::cast)
                 .filter(msg -> msg.messageType().equals(Dependencies.class))
                 .map(msg -> (Dependencies) msg.payload())
@@ -30,8 +30,8 @@ public class DOT {
         // Collect all the status' and dependencies from each unit
         units.forEach(id -> {
             try {
-                registry.sink().accept(ImmutableUnicastMessage.<ReportStateRequest>builder().messageType(ReportStateRequest.class).target(id).build());
-                registry.sink().accept(ImmutableUnicastMessage.<ReportDependenciesRequest>builder().messageType(ReportDependenciesRequest.class).target(id).build());
+                bus.sink().accept(ImmutableUnicastMessage.<ReportStateRequest>builder().messageType(ReportStateRequest.class).target(id).build());
+                bus.sink().accept(ImmutableUnicastMessage.<ReportDependenciesRequest>builder().messageType(ReportDependenciesRequest.class).target(id).build());
             } catch (Exception e) {
                 e.printStackTrace();
             }

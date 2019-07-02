@@ -5,7 +5,7 @@ import static com.github.karsaig.approvalcrest.matcher.Matchers.sameContentAsApp
 import static com.pkb.unit.DOT.toDOTFormat;
 
 public class TestCommon {
-    static void assertRegistry(Registry registry) {
-        assertThat(toDOTFormat(registry), sameContentAsApproved());
+    static void assertRegistry(Bus bus) {
+        assertThat(toDOTFormat(bus), sameContentAsApproved());
     }
 }
