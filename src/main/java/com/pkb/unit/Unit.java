@@ -11,20 +11,19 @@ import static com.pkb.unit.State.STOPPED;
 import static com.pkb.unit.State.STOPPING;
 import static com.pkb.unit.State.UNKNOWN;
 import static com.pkb.unit.Unchecked.unchecked;
+import static com.pkb.unit.message.ImmutableMessage.message;
+import static com.pkb.unit.message.payload.ImmutableDependencies.dependencies;
+import static com.pkb.unit.message.payload.ImmutableNewUnit.newUnit;
+import static com.pkb.unit.message.payload.ImmutableTransition.transition;
 
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
-import com.pkb.unit.message.ImmutableMessageWithPayload;
-import com.pkb.unit.message.ImmutableUnicastMessage;
-import com.pkb.unit.message.ImmutableUnicastMessageWithPayload;
-import com.pkb.unit.message.MessageWithPayload;
-import com.pkb.unit.message.UnicastMessage;
-import com.pkb.unit.message.UnicastMessageWithPayload;
+import com.pkb.unit.message.ImmutableMessage;
+import com.pkb.unit.message.Message;
 import com.pkb.unit.message.payload.Dependencies;
-import com.pkb.unit.message.payload.ImmutableDependencies;
-import com.pkb.unit.message.payload.ImmutableNewUnit;
 import com.pkb.unit.message.payload.ImmutableTransition;
 import com.pkb.unit.message.payload.NewUnit;
 import com.pkb.unit.message.payload.ReportDependenciesRequest;
@@ -66,58 +65,37 @@ public abstract class Unit {
 
     private Map<String, State> mandatoryDependencies = new ConcurrentHashMap<>();
 
-    public Unit(String id, Bus owner) {
+    public Unit(String id, Bus bus) {
         this.id = id;
         this.state = CREATED;
-        this.owner = owner;
+        this.owner = bus;
         // Commands might result in IO bound operations, e.g.
         // opening a database connection or connecting to an HTTP API.
         // Use the io() scheduler for this reason
-        commandSubscription = owner.events()
-                .filter(e -> e instanceof UnicastMessageWithPayload)
-                .map(e -> (UnicastMessageWithPayload)e)
-                .filter(e -> e.messageType() == Command.class)
-                .filter(e -> Objects.equals(id, e.target()))
+        commandSubscription = Filters.payloads(bus.events(), Command.class, id)
                 .observeOn(Schedulers.io())
-                .subscribe(ee -> handle((Command)ee.payload()));
+                .subscribe(this::handle);
 
         // Handling transitions & reporting state should _not_ do any IO work.
         // so we can execute these with the io() scheduler.
-        dependenciesSubscription = owner.events()
-                .filter(e -> e instanceof MessageWithPayload)
-                .map(e -> (MessageWithPayload)e)
-                .filter(e -> e.messageType() == Transition.class)
+        dependenciesSubscription = Filters.payloads(bus.events(), Transition.class)
                 .observeOn(Schedulers.computation())
-                .subscribe(te -> handleDependencyTransition((Transition) te.payload()));
-        reportStateSubscription = owner.events()
-                .filter(e -> e instanceof UnicastMessage)
-                .map(e -> (UnicastMessage)e)
-                .filter(e -> e.messageType() == ReportStateRequest.class)
-                .filter(e -> Objects.equals(id, e.target()))
-                .observeOn(Schedulers.computation())
-                .subscribe(ce -> handleReportState());
-        reportDependenciesSubscription = owner.events()
-                .filter(UnicastMessage.class::isInstance)
-                .map(UnicastMessage.class::cast)
-                .filter(msg -> msg.messageType() == ReportDependenciesRequest.class)
-                .filter(msg -> Objects.equals(id, msg.target()))
-                .observeOn(Schedulers.computation())
-                .subscribe(msg -> handleReportDependencies());
+                .subscribe(this::handleDependencyTransition);
 
-        unchecked(() -> owner.sink().accept(ImmutableMessageWithPayload.<NewUnit>builder()
-                .messageType(NewUnit.class)
-                .payload(ImmutableNewUnit.builder().id(id).build()).build()));
+        reportStateSubscription = Filters.messages(bus.events(), ReportStateRequest.class, id)
+                .observeOn(Schedulers.computation())
+                .subscribe(ignored -> handleReportState());
+
+        reportDependenciesSubscription = Filters.messages(bus.events(), ReportDependenciesRequest.class, id)
+                .observeOn(Schedulers.computation())
+                .subscribe(ignored -> handleReportDependencies());
+
+        unchecked(() -> bus.sink().accept(message(NewUnit.class).withPayload(newUnit(id))));
     }
 
     private void handleReportDependencies() {
         unchecked(() ->
-            owner.sink().accept(ImmutableMessageWithPayload.<Dependencies>builder()
-                .messageType(Dependencies.class)
-                .payload(ImmutableDependencies.builder()
-                        .id(id)
-                        .dependencies(mandatoryDependencies)
-                        .build())
-                .build()));
+            owner.sink().accept(message(Dependencies.class).withPayload(dependencies(id, mandatoryDependencies))));
     }
 
     private void handleReportState() {
@@ -146,8 +124,7 @@ public abstract class Unit {
      */
     public State addDependency(String dependency) {
         State ret = mandatoryDependencies.put(dependency, UNKNOWN);
-        // ask for the current state
-        unchecked(() -> owner.sink().accept(ImmutableUnicastMessage.<ReportStateRequest>builder().messageType(ReportStateRequest.class).target(dependency).build()));
+        unchecked(() -> owner.sink().accept(message(ReportStateRequest.class).withTarget(dependency)));
         return ret;
     }
 
@@ -257,27 +234,16 @@ public abstract class Unit {
     abstract HandleOutcome handleStop();
 
     // utility
-    private MessageWithPayload<Transition> makeTE(State previous, State current) {
+    private Message<Transition> makeTE(State previous, State current) {
         return makeTE(previous, current, "");
     }
 
-    private MessageWithPayload<Transition> makeTE(State previous, State current, String comment) {
-        return ImmutableMessageWithPayload
-                .<Transition>builder().payload(ImmutableTransition.builder()
-                        .previous(previous)
-                        .current(current)
-                        .comment(comment)
-                        .id(id)
-                        .build())
-                .messageType(Transition.class)
-                .build();
+    private Message<Transition> makeTE(State previous, State current, String comment) {
+        return message(Transition.class)
+                .withPayload(transition(current, previous, id, Optional.of(comment)));
     }
 
     private void sendCommand(String id, Command command) {
-        unchecked(() -> owner.sink().accept(ImmutableUnicastMessageWithPayload.<Command>builder().messageType(Command.class).target(id).payload(command).build()));
-    }
-
-    public Map<String, State> dependencies() {
-        return mandatoryDependencies;
+        unchecked(() -> owner.sink().accept(message(Command.class).withTarget(id).withPayload(command)));
     }
 }

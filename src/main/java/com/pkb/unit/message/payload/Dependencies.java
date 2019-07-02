@@ -11,8 +11,8 @@ import org.immutables.value.Value.Style;
 import com.pkb.unit.State;
 
 @Immutable
-@Style(of = "dependencies")
+@Style(allParameters = true, of = "dependencies")
 public interface Dependencies extends Serializable {
-    @Parameter String id();
-    @Parameter Map<String, State> dependencies();
+    String id();
+    Map<String, State> dependencies();
 }

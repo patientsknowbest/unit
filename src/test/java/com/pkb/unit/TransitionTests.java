@@ -1,15 +1,14 @@
 package com.pkb.unit;
 
 import static com.pkb.unit.TestCommon.assertRegistry;
+import static com.pkb.unit.message.ImmutableMessage.message;
+import static com.pkb.unit.message.payload.ImmutableTransition.transition;
+
+import java.util.Optional;
 
 import org.junit.Test;
 
-import com.pkb.unit.message.ImmutableMessageWithPayload;
-import com.pkb.unit.message.ImmutableUnicastMessageWithPayload;
 import com.pkb.unit.message.Message;
-import com.pkb.unit.message.MessageWithPayload;
-import com.pkb.unit.message.UnicastMessageWithPayload;
-import com.pkb.unit.message.payload.ImmutableTransition;
 import com.pkb.unit.message.payload.Transition;
 
 import io.reactivex.observers.TestObserver;
@@ -78,19 +77,14 @@ public class TransitionTests {
         assertRegistry(bus);
     }
 
-    private UnicastMessageWithPayload<Command> command(String targetUnitId, Command start) {
-        return ImmutableUnicastMessageWithPayload.<Command>builder().target(targetUnitId).messageType(Command.class).payload(start).build();
+    private Message<Command> command(String targetUnitId, Command start) {
+        return message(Command.class)
+                .withTarget(targetUnitId)
+                .withPayload(start);
     }
 
-    private MessageWithPayload<Transition> transitionMessage(String id, State previous, State current, String comment) {
-        return ImmutableMessageWithPayload
-                .<Transition>builder().payload(ImmutableTransition.builder()
-                        .previous(previous)
-                        .current(current)
-                        .comment(comment)
-                        .id(id)
-                        .build())
-                .messageType(Transition.class)
-                .build();
+    private Message<Transition> transitionMessage(String id, State previous, State current, String comment) {
+        return message(Transition.class)
+                .withPayload(transition(current, previous, id, Optional.of(comment)));
     }
 }

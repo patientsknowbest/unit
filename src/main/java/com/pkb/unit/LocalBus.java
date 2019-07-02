@@ -1,12 +1,13 @@
 package com.pkb.unit;
 
+import static com.pkb.unit.Filters.payloads;
+
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
 import com.pkb.unit.message.Message;
-import com.pkb.unit.message.MessageWithPayload;
 import com.pkb.unit.message.payload.NewUnit;
 
 import com.jakewharton.rxrelay2.PublishRelay;
@@ -22,10 +23,7 @@ public class LocalBus implements Bus, Closeable {
     private Disposable newUnitsSubscription;
 
     public LocalBus() {
-        newUnitsSubscription = events.filter(MessageWithPayload.class::isInstance)
-                .map(MessageWithPayload.class::cast)
-                .filter(msg -> msg.messageType() == NewUnit.class)
-                .map(msg -> (NewUnit)msg.payload())
+        newUnitsSubscription = payloads(events, NewUnit.class)
                 .observeOn(Schedulers.computation())
                 .subscribe(nu -> units.add(nu.id()));
     }

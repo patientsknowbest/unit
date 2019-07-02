@@ -3,9 +3,12 @@ package com.pkb.unit.message.payload;
 import java.io.Serializable;
 
 import org.immutables.value.Value;
+import org.immutables.value.Value.Immutable;
+import org.immutables.value.Value.Parameter;
+import org.immutables.value.Value.Style;
 
-@Value.Immutable
-@Value.Style(of = "newUnit")
+@Immutable
+@Style(allParameters = true, of = "newUnit")
 public interface NewUnit extends Serializable {
-    @Value.Parameter String id();
+    String id();
 }
