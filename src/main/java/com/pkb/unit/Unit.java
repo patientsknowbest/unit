@@ -16,6 +16,21 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 
+import com.pkb.unit.message.ImmutableMessageWithPayload;
+import com.pkb.unit.message.ImmutableUnicastMessage;
+import com.pkb.unit.message.ImmutableUnicastMessageWithPayload;
+import com.pkb.unit.message.MessageWithPayload;
+import com.pkb.unit.message.UnicastMessage;
+import com.pkb.unit.message.UnicastMessageWithPayload;
+import com.pkb.unit.message.payload.Dependencies;
+import com.pkb.unit.message.payload.ImmutableDependencies;
+import com.pkb.unit.message.payload.ImmutableNewUnit;
+import com.pkb.unit.message.payload.ImmutableTransition;
+import com.pkb.unit.message.payload.NewUnit;
+import com.pkb.unit.message.payload.ReportDependenciesRequest;
+import com.pkb.unit.message.payload.ReportStateRequest;
+import com.pkb.unit.message.payload.Transition;
+
 import io.reactivex.disposables.Disposable;
 import io.reactivex.schedulers.Schedulers;
 import io.vavr.collection.List;
@@ -242,7 +257,7 @@ public abstract class Unit {
     abstract HandleOutcome handleStop();
 
     // utility
-    private MessageWithPayload<Transition>  makeTE(State previous, State current) {
+    private MessageWithPayload<Transition> makeTE(State previous, State current) {
         return makeTE(previous, current, "");
     }
 

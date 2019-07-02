@@ -4,6 +4,14 @@ import static com.pkb.unit.TestCommon.assertRegistry;
 
 import org.junit.Test;
 
+import com.pkb.unit.message.ImmutableMessageWithPayload;
+import com.pkb.unit.message.ImmutableUnicastMessageWithPayload;
+import com.pkb.unit.message.Message;
+import com.pkb.unit.message.MessageWithPayload;
+import com.pkb.unit.message.UnicastMessageWithPayload;
+import com.pkb.unit.message.payload.ImmutableTransition;
+import com.pkb.unit.message.payload.Transition;
+
 import io.reactivex.observers.TestObserver;
 
 public class TransitionTests {

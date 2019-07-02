@@ -1,4 +1,4 @@
-package com.pkb.unit;
+package com.pkb.unit.message;
 
 import org.immutables.value.Value;
 

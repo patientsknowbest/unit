@@ -1,3 +1,3 @@
-package com.pkb.unit;
+package com.pkb.unit.message.payload;
 
 public interface ReportStateRequest {}

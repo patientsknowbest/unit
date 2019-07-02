@@ -1,10 +1,11 @@
-package com.pkb.unit;
+package com.pkb.unit.message.payload;
 
 import java.io.Serializable;
 
 import org.immutables.value.Value;
 
 @Value.Immutable
+@Value.Style(of = "newUnit")
 public interface NewUnit extends Serializable {
-    String id();
+    @Value.Parameter String id();
 }

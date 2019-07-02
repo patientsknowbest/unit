@@ -5,6 +5,10 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.pkb.unit.message.Message;
+import com.pkb.unit.message.MessageWithPayload;
+import com.pkb.unit.message.payload.NewUnit;
+
 import com.jakewharton.rxrelay2.PublishRelay;
 
 import io.reactivex.Observable;

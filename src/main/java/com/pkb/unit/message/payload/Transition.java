@@ -1,9 +1,11 @@
-package com.pkb.unit;
+package com.pkb.unit.message.payload;
 
 import java.io.Serializable;
 import java.util.Optional;
 
 import org.immutables.value.Value;
+
+import com.pkb.unit.State;
 
 /**
  * Transition represents a state change.

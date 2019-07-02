@@ -2,6 +2,8 @@ package com.pkb.unit;
 
 import java.util.List;
 
+import com.pkb.unit.message.Message;
+
 import io.reactivex.Observable;
 import io.reactivex.functions.Consumer;
 
