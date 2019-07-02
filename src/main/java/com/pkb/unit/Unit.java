@@ -10,6 +10,7 @@ import static com.pkb.unit.State.STARTING;
 import static com.pkb.unit.State.STOPPED;
 import static com.pkb.unit.State.STOPPING;
 import static com.pkb.unit.State.UNKNOWN;
+import static com.pkb.unit.Unchecked.unchecked;
 
 import java.util.Map;
 import java.util.Objects;
@@ -87,28 +88,21 @@ public abstract class Unit {
                 .filter(msg -> Objects.equals(id, msg.target()))
                 .observeOn(Schedulers.computation())
                 .subscribe(msg -> handleReportDependencies());
-        try {
-            owner.sink().accept(ImmutableMessageWithPayload.<NewUnit>builder()
-                    .messageType(NewUnit.class)
-                    .payload(ImmutableNewUnit.builder().id(id).build()).build());
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
 
+        unchecked(() -> owner.sink().accept(ImmutableMessageWithPayload.<NewUnit>builder()
+                .messageType(NewUnit.class)
+                .payload(ImmutableNewUnit.builder().id(id).build()).build()));
     }
 
     private void handleReportDependencies() {
-        try {
+        unchecked(() ->
             owner.sink().accept(ImmutableMessageWithPayload.<Dependencies>builder()
-                    .messageType(Dependencies.class)
-                    .payload(ImmutableDependencies.builder()
-                                .id(id)
-                                .dependencies(mandatoryDependencies)
-                                .build())
-                    .build());
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
+                .messageType(Dependencies.class)
+                .payload(ImmutableDependencies.builder()
+                        .id(id)
+                        .dependencies(mandatoryDependencies)
+                        .build())
+                .build()));
     }
 
     private void handleReportState() {
@@ -138,11 +132,7 @@ public abstract class Unit {
     public State addDependency(String dependency) {
         State ret = mandatoryDependencies.put(dependency, UNKNOWN);
         // ask for the current state
-        try {
-            owner.sink().accept(ImmutableUnicastMessage.<ReportStateRequest>builder().messageType(ReportStateRequest.class).target(dependency).build());
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
+        unchecked(() -> owner.sink().accept(ImmutableUnicastMessage.<ReportStateRequest>builder().messageType(ReportStateRequest.class).target(dependency).build()));
         return ret;
     }
 
@@ -162,11 +152,7 @@ public abstract class Unit {
                     .handle(command);
         } catch (Exception e) {
             state = FAILED;
-            try {
-                owner.sink().accept(makeTE(previous, state, e.getMessage()));
-            } catch (Exception e1) {
-                throw new RuntimeException(e); // ?
-            }
+            unchecked(() -> owner.sink().accept(makeTE(previous, state, e.getMessage())));
         }
     }
 
@@ -221,17 +207,12 @@ public abstract class Unit {
         }
     }
 
-
     private void setAndPublishState(State state) {
         setAndPublishState(state, "");
     }
 
     private void setAndPublishState(State state, String comment) {
-        try {
-            this.owner.sink().accept(makeTE(this.state, state));
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
+        unchecked(() -> this.owner.sink().accept(makeTE(this.state, state)));
         this.state = state;
     }
 
@@ -278,11 +259,7 @@ public abstract class Unit {
     }
 
     private void sendCommand(String id, Command command) {
-        try {
-            owner.sink().accept(ImmutableUnicastMessageWithPayload.<Command>builder().messageType(Command.class).target(id).payload(command).build());
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
+        unchecked(() -> owner.sink().accept(ImmutableUnicastMessageWithPayload.<Command>builder().messageType(Command.class).target(id).payload(command).build()));
     }
 
     public Map<String, State> dependencies() {
