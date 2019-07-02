@@ -15,7 +15,6 @@ class FakeUnit extends Unit {
 
     @Override
     HandleOutcome handleStart() {
-        cdlCompleteStart = new CountDownLatch(1);
         System.out.println(id() + " starting");
         try {
             cdlCompleteStart.await();
@@ -28,7 +27,6 @@ class FakeUnit extends Unit {
 
     @Override
     HandleOutcome handleStop() {
-        cdlCompleteStop = new CountDownLatch(1);
         System.out.println(id() + " stopping");
         try {
             cdlCompleteStop.await();

@@ -1,7 +1,5 @@
 package com.pkb.unit;
 
-import java.util.List;
-
 import com.pkb.unit.message.Message;
 
 import io.reactivex.Observable;
@@ -25,10 +23,4 @@ public interface Bus {
      * @return An Observable providing an incoming communication channel for Units to receive messages.
      */
     Observable<Message> events();
-
-    /**
-     * Fetch the whole list of units
-     * @return
-     */
-    List<String> units();
 }

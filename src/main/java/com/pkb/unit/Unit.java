@@ -17,14 +17,11 @@ import static com.pkb.unit.message.payload.ImmutableNewUnit.newUnit;
 import static com.pkb.unit.message.payload.ImmutableTransition.transition;
 
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
-import com.pkb.unit.message.ImmutableMessage;
 import com.pkb.unit.message.Message;
 import com.pkb.unit.message.payload.Dependencies;
-import com.pkb.unit.message.payload.ImmutableTransition;
 import com.pkb.unit.message.payload.NewUnit;
 import com.pkb.unit.message.payload.ReportDependenciesRequest;
 import com.pkb.unit.message.payload.ReportStateRequest;
@@ -95,7 +92,7 @@ public abstract class Unit {
 
     private void handleReportDependencies() {
         unchecked(() ->
-            owner.sink().accept(message(Dependencies.class).withPayload(dependencies(id, mandatoryDependencies))));
+            owner.sink().accept(message(Dependencies.class).withPayload(dependencies(id, mandatoryDependencies.keySet()))));
     }
 
     private void handleReportState() {
@@ -124,15 +121,23 @@ public abstract class Unit {
      */
     public State addDependency(String dependency) {
         State ret = mandatoryDependencies.put(dependency, UNKNOWN);
+
+        // Publish our new list of dependencies
+        handleReportDependencies();
+
+        // Prompt the dependency to report it's state
         unchecked(() -> owner.sink().accept(message(ReportStateRequest.class).withTarget(dependency)));
+
         return ret;
     }
 
     /**
      * @return true if this set contained the specified element
      */
-    public State removeDependency(String dependency) {
-        return mandatoryDependencies.remove(dependency);
+    public void removeDependency(String dependency) {
+        mandatoryDependencies.remove(dependency);
+        // Publish our new list of dependencies
+        handleReportDependencies();
     }
 
     private synchronized void handle(Command command) {
