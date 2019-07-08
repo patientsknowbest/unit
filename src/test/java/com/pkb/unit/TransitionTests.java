@@ -1,8 +1,12 @@
 package com.pkb.unit;
 
-import static com.pkb.unit.TestCommon.assertRegistry;
+import static com.pkb.unit.TestCommon.assertTracker;
+import static com.pkb.unit.message.ImmutableMessage.message;
 
 import org.junit.Test;
+
+import com.pkb.unit.message.Message;
+import com.pkb.unit.message.payload.Transition;
 
 import io.reactivex.observers.TestObserver;
 
@@ -15,25 +19,23 @@ public class TransitionTests {
     @Test
     public void startCommandTransitionsSingleUnitToStarting() throws Exception {
         // GIVEN
-        Registry registry = new LocalRegistry();
+        Bus bus = new LocalBus();
+        Tracker tracker = new Tracker(bus);
         String unitID = "unit1";
-        new FakeUnit(unitID, registry);
-        TestObserver<Message> testTransitionObserver = testTransitionObserver(registry);
+        new FakeUnit(unitID, bus);
+        TestObserver<Message> testTransitionObserver = testTransitionObserver(bus);
 
         // WHEN
-        registry.sink().accept(command(unitID, Command.START));
+        bus.sink().accept(command(unitID, Command.START));
 
         // THEN
         testTransitionObserver
-                .awaitCount(1)
-                .assertValues(
-                        transitionMessage(unitID, State.CREATED, State.STARTING, "")
-                );
-        assertRegistry(registry);
+                .awaitCount(1);
+        assertTracker(tracker);
     }
 
-    private TestObserver<Message> testTransitionObserver(Registry registry) {
-        return registry.events()
+    private TestObserver<Message> testTransitionObserver(Bus bus) {
+        return bus.events()
                 .filter(it -> it.messageType().equals(Transition.class))
                 .test();
     }
@@ -42,47 +44,53 @@ public class TransitionTests {
     @Test
     public void startCommandTransitionsUnitToStarting() throws Exception {
         // GIVEN
-        Registry registry = new LocalRegistry();
+        Bus bus = new LocalBus();
+        Tracker tracker = new Tracker(bus);
         String unit1ID = "unit1";
         String unit2ID = "unit2";
-        FakeUnit unit1 = new FakeUnit(unit1ID, registry);
-        FakeUnit unit2 = new FakeUnit(unit2ID, registry);
+        FakeUnit unit1 = new FakeUnit(unit1ID, bus);
+        FakeUnit unit2 = new FakeUnit(unit2ID, bus);
+        TestObserver<Message> testTransitionObserver = testTransitionObserver(bus);
 
         // WHEN
-        TestObserver<Message> transitionObserver1 = testTransitionObserver(registry);
         unit1.addDependency(unit2ID);
-        // THEN
-        transitionObserver1.awaitCount(1)
-                .assertValue(transitionMessage(unit2ID, State.CREATED, State.CREATED, ""))
-                .dispose();
+
+        bus.sink().accept(command(unit1ID, Command.START));
+
+        testTransitionObserver
+                .awaitCount(3); // Should see 2 transitions
+
+        assertTracker(tracker);
+    }
+
+    // 7c64a1
+    @Test
+    public void startCompleteTransitionsUnitsToStarted() throws Exception {
+        // GIVEN
+        Bus bus = new LocalBus();
+        Tracker tracker = new Tracker(bus);
+        String unit1ID = "unit1";
+        String unit2ID = "unit2";
+        FakeUnit unit1 = new FakeUnit(unit1ID, bus);
+        FakeUnit unit2 = new FakeUnit(unit2ID, bus);
+        TestObserver<Message> testTransitionObserver = testTransitionObserver(bus);
 
         // WHEN
-        TestObserver<Message> transitionObserver2 = testTransitionObserver(registry);
-        registry.sink().accept(command(unit1ID, Command.START));
+        unit1.addDependency(unit2ID);
 
-        // THEN
-        transitionObserver2
-                .awaitCount(2)
-                .assertValues(
-                        transitionMessage(unit1ID, State.CREATED, State.STARTING, ""),
-                        transitionMessage(unit2ID, State.CREATED, State.STARTING, "")
-                ).dispose();
-        assertRegistry(registry);
+        bus.sink().accept(command(unit1ID, Command.START));
+        unit2.completeStart();
+        unit1.completeStart();
+
+        testTransitionObserver
+                .awaitCount(6);
+
+        assertTracker(tracker);
     }
 
-    private UnicastMessageWithPayload<Command> command(String targetUnitId, Command start) {
-        return ImmutableUnicastMessageWithPayload.<Command>builder().target(targetUnitId).messageType(Command.class).payload(start).build();
-    }
-
-    private MessageWithPayload<Transition> transitionMessage(String id, State previous, State current, String comment) {
-        return ImmutableMessageWithPayload
-                .<Transition>builder().payload(ImmutableTransition.builder()
-                        .previous(previous)
-                        .current(current)
-                        .comment(comment)
-                        .id(id)
-                        .build())
-                .messageType(Transition.class)
-                .build();
+    private Message<Command> command(String targetUnitId, Command start) {
+        return message(Command.class)
+                .withTarget(targetUnitId)
+                .withPayload(start);
     }
 }

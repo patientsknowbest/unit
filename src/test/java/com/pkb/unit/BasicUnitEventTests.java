@@ -1,6 +1,6 @@
 package com.pkb.unit;
 
-import static com.pkb.unit.TestCommon.assertRegistry;
+import static com.pkb.unit.TestCommon.assertTracker;
 
 import org.junit.Test;
 
@@ -10,11 +10,12 @@ public class BasicUnitEventTests {
     @Test
     public void initialStateIsCreated() throws Exception {
         // GIVEN
-        Registry registry = new LocalRegistry();
+        Bus bus = new LocalBus();
+        Tracker tracker = new Tracker(bus);
         // WHEN
-        new FakeUnit("unit1", registry);
+        new FakeUnit("unit1", bus);
         // THEN
-        assertRegistry(registry);
+        assertTracker(tracker);
     }
 
 }

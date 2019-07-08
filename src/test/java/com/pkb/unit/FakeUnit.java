@@ -9,13 +9,12 @@ class FakeUnit extends Unit {
     private CountDownLatch cdlCompleteStart = new CountDownLatch(1);
     private CountDownLatch cdlCompleteStop = new CountDownLatch(1);
 
-    public FakeUnit(String id, Registry owner) {
+    public FakeUnit(String id, Bus owner) {
         super(id, owner);
     }
 
     @Override
     HandleOutcome handleStart() {
-        cdlCompleteStart = new CountDownLatch(1);
         System.out.println(id() + " starting");
         try {
             cdlCompleteStart.await();
@@ -28,7 +27,6 @@ class FakeUnit extends Unit {
 
     @Override
     HandleOutcome handleStop() {
-        cdlCompleteStop = new CountDownLatch(1);
         System.out.println(id() + " stopping");
         try {
             cdlCompleteStop.await();

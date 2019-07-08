@@ -1,0 +1,6 @@
+/*com.pkb.unit.TransitionTests.startCompleteTransitionsUnitsToStarted*/
+digraph { 
+unit1 [label="unit1 STARTED"]
+unit1 -> unit2
+unit2 [label="unit2 STARTED"]
+}

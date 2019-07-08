@@ -10,10 +10,22 @@ import static com.pkb.unit.State.STARTING;
 import static com.pkb.unit.State.STOPPED;
 import static com.pkb.unit.State.STOPPING;
 import static com.pkb.unit.State.UNKNOWN;
+import static com.pkb.unit.Unchecked.unchecked;
+import static com.pkb.unit.message.ImmutableMessage.message;
+import static com.pkb.unit.message.payload.ImmutableDependencies.dependencies;
+import static com.pkb.unit.message.payload.ImmutableNewUnit.newUnit;
+import static com.pkb.unit.message.payload.ImmutableTransition.transition;
 
 import java.util.Map;
-import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
+
+import com.pkb.unit.message.Message;
+import com.pkb.unit.message.payload.Dependencies;
+import com.pkb.unit.message.payload.NewUnit;
+import com.pkb.unit.message.payload.ReportDependenciesRequest;
+import com.pkb.unit.message.payload.ReportStateRequest;
+import com.pkb.unit.message.payload.Transition;
 
 import io.reactivex.disposables.Disposable;
 import io.reactivex.schedulers.Schedulers;
@@ -27,7 +39,7 @@ public abstract class Unit {
     private final Disposable reportStateSubscription;
     private final Disposable reportDependenciesSubscription;
     private State state;
-    private final Registry owner;
+    private final Bus owner;
 
     private final List<CommandHandler> commandHandlers = List.of(
             new StartHandler(),
@@ -44,71 +56,43 @@ public abstract class Unit {
         return state;
     }
 
-    Registry owner() {
+    Bus owner() {
         return owner;
     }
 
     private Map<String, State> mandatoryDependencies = new ConcurrentHashMap<>();
 
-    public Unit(String id, Registry owner) {
+    public Unit(String id, Bus bus) {
         this.id = id;
         this.state = CREATED;
-        this.owner = owner;
+        this.owner = bus;
         // Commands might result in IO bound operations, e.g.
         // opening a database connection or connecting to an HTTP API.
         // Use the io() scheduler for this reason
-        commandSubscription = owner.events()
-                .filter(e -> e instanceof UnicastMessageWithPayload)
-                .map(e -> (UnicastMessageWithPayload)e)
-                .filter(e -> e.messageType() == Command.class)
-                .filter(e -> Objects.equals(id, e.target()))
+        commandSubscription = Filters.payloads(bus.events(), Command.class, id)
                 .observeOn(Schedulers.io())
-                .subscribe(ee -> handle((Command)ee.payload()));
+                .subscribe(this::handle);
 
         // Handling transitions & reporting state should _not_ do any IO work.
         // so we can execute these with the io() scheduler.
-        dependenciesSubscription = owner.events()
-                .filter(e -> e instanceof MessageWithPayload)
-                .map(e -> (MessageWithPayload)e)
-                .filter(e -> e.messageType() == Transition.class)
+        dependenciesSubscription = Filters.payloads(bus.events(), Transition.class)
                 .observeOn(Schedulers.computation())
-                .subscribe(te -> handleDependencyTransition((Transition) te.payload()));
-        reportStateSubscription = owner.events()
-                .filter(e -> e instanceof UnicastMessage)
-                .map(e -> (UnicastMessage)e)
-                .filter(e -> e.messageType() == ReportStateRequest.class)
-                .filter(e -> Objects.equals(id, e.target()))
-                .observeOn(Schedulers.computation())
-                .subscribe(ce -> handleReportState());
-        reportDependenciesSubscription = owner.events()
-                .filter(UnicastMessage.class::isInstance)
-                .map(UnicastMessage.class::cast)
-                .filter(msg -> msg.messageType() == ReportDependenciesRequest.class)
-                .filter(msg -> Objects.equals(id, msg.target()))
-                .observeOn(Schedulers.computation())
-                .subscribe(msg -> handleReportDependencies());
-        try {
-            owner.sink().accept(ImmutableMessageWithPayload.<NewUnit>builder()
-                    .messageType(NewUnit.class)
-                    .payload(ImmutableNewUnit.builder().id(id).build()).build());
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
+                .subscribe(this::handleDependencyTransition);
 
+        reportStateSubscription = Filters.messages(bus.events(), ReportStateRequest.class, id)
+                .observeOn(Schedulers.computation())
+                .subscribe(ignored -> handleReportState());
+
+        reportDependenciesSubscription = Filters.messages(bus.events(), ReportDependenciesRequest.class, id)
+                .observeOn(Schedulers.computation())
+                .subscribe(ignored -> handleReportDependencies());
+
+        unchecked(() -> bus.sink().accept(message(NewUnit.class).withPayload(newUnit(id))));
     }
 
     private void handleReportDependencies() {
-        try {
-            owner.sink().accept(ImmutableMessageWithPayload.<Dependencies>builder()
-                    .messageType(Dependencies.class)
-                    .payload(ImmutableDependencies.builder()
-                                .id(id)
-                                .dependencies(mandatoryDependencies)
-                                .build())
-                    .build());
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
+        unchecked(() ->
+            owner.sink().accept(message(Dependencies.class).withPayload(dependencies(id, mandatoryDependencies.keySet()))));
     }
 
     private void handleReportState() {
@@ -116,10 +100,10 @@ public abstract class Unit {
     }
 
     private void handleDependencyTransition(Transition transition) {
-        if (!mandatoryDependencies.containsKey(transition.id())) {
+        if (!mandatoryDependencies.containsKey(transition.unitId())) {
             return;
         }
-        mandatoryDependencies.put(transition.id(), transition.current());
+        mandatoryDependencies.put(transition.unitId(), transition.current());
         if (transition.previous() != STARTED && allDepsHaveStarted()) {
             sendCommand(id, START);
         }
@@ -137,20 +121,23 @@ public abstract class Unit {
      */
     public State addDependency(String dependency) {
         State ret = mandatoryDependencies.put(dependency, UNKNOWN);
-        // ask for the current state
-        try {
-            owner.sink().accept(ImmutableUnicastMessage.<ReportStateRequest>builder().messageType(ReportStateRequest.class).target(dependency).build());
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
+
+        // Publish our new list of dependencies
+        handleReportDependencies();
+
+        // Prompt the dependency to report it's state
+        unchecked(() -> owner.sink().accept(message(ReportStateRequest.class).withTarget(dependency)));
+
         return ret;
     }
 
     /**
      * @return true if this set contained the specified element
      */
-    public State removeDependency(String dependency) {
-        return mandatoryDependencies.remove(dependency);
+    public void removeDependency(String dependency) {
+        mandatoryDependencies.remove(dependency);
+        // Publish our new list of dependencies
+        handleReportDependencies();
     }
 
     private synchronized void handle(Command command) {
@@ -162,11 +149,7 @@ public abstract class Unit {
                     .handle(command);
         } catch (Exception e) {
             state = FAILED;
-            try {
-                owner.sink().accept(makeTE(previous, state, e.getMessage()));
-            } catch (Exception e1) {
-                throw new RuntimeException(e); // ?
-            }
+            unchecked(() -> owner.sink().accept(makeTransitionEvent(previous, state, e.getMessage())));
         }
     }
 
@@ -221,17 +204,12 @@ public abstract class Unit {
         }
     }
 
-
     private void setAndPublishState(State state) {
         setAndPublishState(state, "");
     }
 
     private void setAndPublishState(State state, String comment) {
-        try {
-            this.owner.sink().accept(makeTE(this.state, state));
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
+        unchecked(() -> this.owner.sink().accept(makeTransitionEvent(this.state, state)));
         this.state = state;
     }
 
@@ -261,31 +239,16 @@ public abstract class Unit {
     abstract HandleOutcome handleStop();
 
     // utility
-    private MessageWithPayload<Transition>  makeTE(State previous, State current) {
-        return makeTE(previous, current, "");
+    private Message<Transition> makeTransitionEvent(State previous, State current) {
+        return makeTransitionEvent(previous, current, "");
     }
 
-    private MessageWithPayload<Transition> makeTE(State previous, State current, String comment) {
-        return ImmutableMessageWithPayload
-                .<Transition>builder().payload(ImmutableTransition.builder()
-                        .previous(previous)
-                        .current(current)
-                        .comment(comment)
-                        .id(id)
-                        .build())
-                .messageType(Transition.class)
-                .build();
+    private Message<Transition> makeTransitionEvent(State previous, State current, String comment) {
+        return message(Transition.class)
+                .withPayload(transition(current, previous, id, Optional.of(comment)));
     }
 
     private void sendCommand(String id, Command command) {
-        try {
-            owner.sink().accept(ImmutableUnicastMessageWithPayload.<Command>builder().messageType(Command.class).target(id).payload(command).build());
-        } catch (Exception e) {
-            throw new RuntimeException(e);
-        }
-    }
-
-    public Map<String, State> dependencies() {
-        return mandatoryDependencies;
+        unchecked(() -> owner.sink().accept(message(Command.class).withTarget(id).withPayload(command)));
     }
 }
