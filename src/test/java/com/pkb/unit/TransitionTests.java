@@ -58,7 +58,7 @@ public class TransitionTests {
         bus.sink().accept(command(unit1ID, Command.START));
 
         testTransitionObserver
-                .awaitCount(2); // Should see 2 transitions
+                .awaitCount(3); // Should see 2 transitions
 
         assertTracker(tracker);
     }
@@ -83,7 +83,7 @@ public class TransitionTests {
         unit1.completeStart();
 
         testTransitionObserver
-                .awaitCount(4);
+                .awaitCount(6);
 
         assertTracker(tracker);
     }
