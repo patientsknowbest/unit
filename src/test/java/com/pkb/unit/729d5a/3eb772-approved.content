@@ -1,0 +1,6 @@
+/*com.pkb.unit.ErrorTests.unsuccessfulDependencyStartTransitionsDependencyToFailedAndDependentToStarting*/
+digraph { 
+unit1 [label="unit1 STARTING"]
+unit1 -> unit2
+unit2 [label="unit2 FAILED"]
+}
