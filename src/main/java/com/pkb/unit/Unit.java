@@ -100,10 +100,10 @@ public abstract class Unit {
     }
 
     private void handleDependencyTransition(Transition transition) {
-        if (!mandatoryDependencies.containsKey(transition.id())) {
+        if (!mandatoryDependencies.containsKey(transition.unitId())) {
             return;
         }
-        mandatoryDependencies.put(transition.id(), transition.current());
+        mandatoryDependencies.put(transition.unitId(), transition.current());
         if (transition.previous() != STARTED && allDepsHaveStarted()) {
             sendCommand(id, START);
         }
@@ -149,7 +149,7 @@ public abstract class Unit {
                     .handle(command);
         } catch (Exception e) {
             state = FAILED;
-            unchecked(() -> owner.sink().accept(makeTE(previous, state, e.getMessage())));
+            unchecked(() -> owner.sink().accept(makeTransitionEvent(previous, state, e.getMessage())));
         }
     }
 
@@ -209,7 +209,7 @@ public abstract class Unit {
     }
 
     private void setAndPublishState(State state, String comment) {
-        unchecked(() -> this.owner.sink().accept(makeTE(this.state, state)));
+        unchecked(() -> this.owner.sink().accept(makeTransitionEvent(this.state, state)));
         this.state = state;
     }
 
@@ -239,11 +239,11 @@ public abstract class Unit {
     abstract HandleOutcome handleStop();
 
     // utility
-    private Message<Transition> makeTE(State previous, State current) {
-        return makeTE(previous, current, "");
+    private Message<Transition> makeTransitionEvent(State previous, State current) {
+        return makeTransitionEvent(previous, current, "");
     }
 
-    private Message<Transition> makeTE(State previous, State current, String comment) {
+    private Message<Transition> makeTransitionEvent(State previous, State current, String comment) {
         return message(Transition.class)
                 .withPayload(transition(current, previous, id, Optional.of(comment)));
     }

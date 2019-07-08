@@ -80,9 +80,9 @@ public class Tracker {
     }
 
     private void handleDependencies(Dependencies dependencies) {
-        units.compute(dependencies.id(), (id, unit) -> {
+        units.compute(dependencies.unitId(), (id, unit) -> {
             if (unit == null) {
-                unit = new Unit(dependencies.id());
+                unit = new Unit(dependencies.unitId());
             }
             unit.setDependencies(dependencies.dependencies());
             return unit;
@@ -90,9 +90,9 @@ public class Tracker {
     }
 
     private void handleTransition(Transition transition) {
-        units.compute(transition.id(), (id, unit) -> {
+        units.compute(transition.unitId(), (id, unit) -> {
             if (unit == null) {
-                unit = new Unit(transition.id());
+                unit = new Unit(transition.unitId());
             }
             unit.setState(transition.current());
             return unit;

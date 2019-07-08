@@ -3,7 +3,6 @@ package com.pkb.unit.message.payload;
 import java.io.Serializable;
 import java.util.Optional;
 
-import org.immutables.value.Value;
 import org.immutables.value.Value.Immutable;
 import org.immutables.value.Value.Style;
 
@@ -17,6 +16,6 @@ import com.pkb.unit.State;
 public interface Transition extends Serializable {
     State current();
     State previous();
-    String id();
+    String unitId();
     Optional<String> comment();
 }

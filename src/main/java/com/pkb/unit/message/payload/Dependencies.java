@@ -9,6 +9,6 @@ import org.immutables.value.Value.Style;
 @Immutable
 @Style(allParameters = true, of = "dependencies")
 public interface Dependencies extends Serializable {
-    String id();
+    String unitId();
     List<String> dependencies();
 }
