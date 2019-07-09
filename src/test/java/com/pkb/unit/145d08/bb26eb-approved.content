@@ -1,0 +1,7 @@
+/*com.pkb.unit.DependencyTests.testRemoveMoreDependencies*/
+digraph { 
+unit4 [label="unit4 CREATED"]
+unit1 [label="unit1 UNKNOWN"]
+unit2 [label="unit2 CREATED"]
+unit3 [label="unit3 CREATED"]
+}

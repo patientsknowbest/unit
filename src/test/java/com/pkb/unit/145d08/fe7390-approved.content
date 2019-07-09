@@ -1,0 +1,6 @@
+/*com.pkb.unit.DependencyTests.testAddOneDependency*/
+digraph { 
+unit1 [label="unit1 UNKNOWN"]
+unit1 -> unit2
+unit2 [label="unit2 CREATED"]
+}
