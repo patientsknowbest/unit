@@ -1,5 +1,7 @@
 package com.pkb.unit;
 
+import static com.pkb.unit.Command.START;
+import static com.pkb.unit.Command.STOP;
 import static com.pkb.unit.TestCommon.assertTracker;
 import static com.pkb.unit.message.ImmutableMessage.message;
 
@@ -18,18 +20,18 @@ public class ErrorTests {
     TestObserver<Message> testTransitionObserver;
     TestObserver<Message> testDependencyObserver;
 
-    // dc2a54
+    // 0362b3
     @Test
-    public void unsuccessfulStartTransitionsSingleUnitToFailing() throws Exception {
+    public void unsuccessfulStartTransitionsSingleUnitToFailed() throws Exception {
         // GIVEN
         Bus bus = new LocalBus();
         Tracker tracker = new Tracker(bus);
+        testTransitionObserver = testTransitionObserver(bus);
         String unitID = "unit1";
         FakeUnit unit1 = new FakeUnit(unitID, bus);
-        testTransitionObserver = testTransitionObserver(bus);
-        bus.sink().accept(command(unitID, Command.START));
 
         // WHEN
+        bus.sink().accept(command(unitID, START));
         unit1.failStart();
 
         // THEN
@@ -38,21 +40,21 @@ public class ErrorTests {
         assertTracker(tracker);
     }
 
-    // 366ae3
+    // 588954
     @Test
-    public void unsuccessfulStartTransitionsIndependentUnitsToFailing() throws Exception {
+    public void unsuccessfulStartTransitionsIndependentUnitsToFailed() throws Exception {
         // GIVEN
         Bus bus = new LocalBus();
         Tracker tracker = new Tracker(bus);
+        testTransitionObserver = testTransitionObserver(bus);
         String unit1ID = "unit1";
         String unit2ID = "unit2";
         FakeUnit unit1 = new FakeUnit(unit1ID, bus);
         FakeUnit unit2 = new FakeUnit(unit2ID, bus);
-        testTransitionObserver = testTransitionObserver(bus);
-        bus.sink().accept(command(unit1ID, Command.START));
-        bus.sink().accept(command(unit2ID, Command.START));
 
         // WHEN
+        bus.sink().accept(command(unit1ID, START));
+        bus.sink().accept(command(unit2ID, START));
         unit1.failStart();
         unit2.failStart();
 
@@ -68,16 +70,15 @@ public class ErrorTests {
         // GIVEN
         Bus bus = new LocalBus();
         Tracker tracker = new Tracker(bus);
+        testTransitionObserver = testTransitionObserver(bus);
         String unit1ID = "unit1";
         String unit2ID = "unit2";
-        testTransitionObserver = testTransitionObserver(bus);
         FakeUnit unit1 = new FakeUnit(unit1ID, bus);
         FakeUnit unit2 = new FakeUnit(unit2ID, bus);
-
+        unit1.addDependency(unit2ID);
 
         // WHEN
-        unit1.addDependency(unit2ID);
-        bus.sink().accept(command(unit1ID, Command.START));
+        bus.sink().accept(command(unit1ID, START));
         unit1.failStart();
         unit2.completeStart();
 
@@ -93,16 +94,15 @@ public class ErrorTests {
         // GIVEN
         Bus bus = new LocalBus();
         Tracker tracker = new Tracker(bus);
+        testTransitionObserver = testTransitionObserver(bus);
         String unit1ID = "unit1";
         String unit2ID = "unit2";
-        testTransitionObserver = testTransitionObserver(bus);
         FakeUnit unit1 = new FakeUnit(unit1ID, bus);
         FakeUnit unit2 = new FakeUnit(unit2ID, bus);
-        bus.sink().accept(command(unit1ID, Command.START));
-
+        unit1.addDependency(unit2ID);
 
         // WHEN
-        unit1.addDependency(unit2ID);
+        bus.sink().accept(command(unit1ID, START));
         unit2.failStart();
         unit1.completeStart();
 
@@ -117,26 +117,26 @@ public class ErrorTests {
     public void unsuccessfulDependencyStartTransitionsItToFailedAndDependentToStartingAndOtherDependencySarted() throws Exception {
         // GIVEN
         Bus bus = new LocalBus();
+        Tracker tracker = new Tracker(bus);
+        testTransitionObserver = testTransitionObserver(bus);
+        testDependencyObserver = testDependencyObserver(bus);
         String unit1ID = "unit1";
         String unit2ID = "unit2";
         String unit3ID = "unit3";
         FakeUnit unit1 = new FakeUnit(unit1ID, bus);
         FakeUnit unit2 = new FakeUnit(unit2ID, bus);
         FakeUnit unit3 = new FakeUnit(unit3ID, bus);
-        testTransitionObserver = testTransitionObserver(bus);
-        Tracker tracker = new Tracker(bus);
-
-
-        // WHEN
-        bus.sink().accept(command(unit1ID, Command.START));
         unit1.addDependency(unit2ID);
         unit1.addDependency(unit3ID);
+
+        // WHEN
+        bus.sink().accept(command(unit1ID, START));
         unit2.failStart();
         unit3.completeStart();
 
         // THEN
         testTransitionObserver
-                .awaitCount(10);
+                .awaitCount(7);
         assertTracker(tracker);
     }
 
@@ -145,31 +145,74 @@ public class ErrorTests {
     public void unsuccessfulTransitiveDependencyStartTransitionsItToFailedAndDependentsToStarting() throws Exception {
         // GIVEN
         Bus bus = new LocalBus();
+        Tracker tracker = new Tracker(bus);
+        testTransitionObserver = testTransitionObserver(bus);
         String unit1ID = "unit1";
         String unit2ID = "unit2";
         String unit3ID = "unit3";
         FakeUnit unit1 = new FakeUnit(unit1ID, bus);
         FakeUnit unit2 = new FakeUnit(unit2ID, bus);
         FakeUnit unit3 = new FakeUnit(unit3ID, bus);
-        testTransitionObserver = testTransitionObserver(bus);
-        testDependencyObserver = testDependencyObserver(bus);
-        Tracker tracker = new Tracker(bus);
-
-
-        // WHEN
         unit1.addDependency(unit2ID);
         unit2.addDependency(unit3ID);
 
-        // THEN
-        testDependencyObserver.awaitCount(2);
-
         // WHEN
-        bus.sink().accept(command(unit1ID, Command.START));
+        bus.sink().accept(command(unit1ID, START));
         unit3.failStart();
 
         // THEN
         testTransitionObserver
-                .awaitCount(9);
+                .awaitCount(6);
+        assertTracker(tracker);
+    }
+
+    // cd5c29
+    @Test
+    public void unsuccessfulStopTransitionsSingleUnitToFailed() throws Exception {
+        // GIVEN
+        Bus bus = new LocalBus();
+        Tracker tracker = new Tracker(bus);
+        testTransitionObserver = testTransitionObserver(bus);
+        String unitID = "unit1";
+        FakeUnit unit1 = new FakeUnit(unitID, bus);
+
+        // WHEN
+        bus.sink().accept(command(unitID, START));
+        unit1.completeStart();
+        bus.sink().accept(command(unitID, STOP));
+        unit1.failStop();
+
+        // THEN
+        testTransitionObserver
+                .awaitCount(4);
+        assertTracker(tracker);
+    }
+
+    // 4783e6
+    @Test
+    public void unsuccessfulStopTransitionsIndependentUnitsToFailed() throws Exception {
+        // GIVEN
+        Bus bus = new LocalBus();
+        Tracker tracker = new Tracker(bus);
+        testTransitionObserver = testTransitionObserver(bus);
+        String unit1ID = "unit1";
+        String unit2ID = "unit2";
+        FakeUnit unit1 = new FakeUnit(unit1ID, bus);
+        FakeUnit unit2 = new FakeUnit(unit2ID, bus);
+        bus.sink().accept(command(unit1ID, START));
+        bus.sink().accept(command(unit2ID, START));
+        unit1.completeStart();
+        unit2.completeStart();
+
+        // WHEN
+        bus.sink().accept(command(unit1ID, STOP));
+        bus.sink().accept(command(unit2ID, STOP));
+        unit1.failStop();
+        unit2.failStop();
+
+        // THEN
+        testTransitionObserver
+                .awaitCount(8);
         assertTracker(tracker);
     }
 
@@ -178,38 +221,71 @@ public class ErrorTests {
     public void unsuccessfulStopTransitionsDependencyToFailedAndDependentToStopped() throws Exception {
         // GIVEN
         Bus bus = new LocalBus();
+        Tracker tracker = new Tracker(bus);
+        testTransitionObserver = testTransitionObserver(bus);
+        testDependencyObserver = testDependencyObserver(bus);
         String unit1ID = "unit1";
         String unit2ID = "unit2";
         FakeUnit unit1 = new FakeUnit(unit1ID, bus);
         FakeUnit unit2 = new FakeUnit(unit2ID, bus);
-        testTransitionObserver = testTransitionObserver(bus);
-        testDependencyObserver = testDependencyObserver(bus);
-        Tracker tracker = new Tracker(bus);
-
-        // WHEN
         unit1.addDependency(unit2ID);
 
-        // THEN
-        testDependencyObserver
-                .awaitCount(3);
-
         // WHEN
-        bus.sink().accept(command(unit1ID, Command.START));
+        bus.sink().accept(command(unit1ID, START));
         unit1.completeStart();
         unit2.completeStart();
 
         // THEN
         testTransitionObserver
-                .awaitCount(8); // make sure START command arrives earlier than STOP
+                .awaitCount(6); // make sure that START command arrives earlier than STOP
 
         // WHEN
-        bus.sink().accept(command(unit2ID, Command.STOP));
+        bus.sink().accept(command(unit2ID, STOP));
         unit2.failStop();
         unit1.completeStop();
 
         // THEN
         testTransitionObserver
-                .awaitCount(12);
+                .awaitCount(10);
+        assertTracker(tracker);
+    }
+
+    // 87402f
+    @Test
+    public void unsuccessfulTransitiveDependencyStopTransitionsItToFailedAndDependentsToStopped() throws Exception {
+        // GIVEN
+        Bus bus = new LocalBus();
+        Tracker tracker = new Tracker(bus);
+        testTransitionObserver = testTransitionObserver(bus);
+        testDependencyObserver = testDependencyObserver(bus);
+        String unit1ID = "unit1";
+        String unit2ID = "unit2";
+        String unit3ID = "unit3";
+        FakeUnit unit1 = new FakeUnit(unit1ID, bus);
+        FakeUnit unit2 = new FakeUnit(unit2ID, bus);
+        FakeUnit unit3 = new FakeUnit(unit3ID, bus);
+        unit1.addDependency(unit2ID);
+        unit2.addDependency(unit3ID);
+
+        // WHEN
+        bus.sink().accept(command(unit1ID, START));
+        unit3.completeStart();
+        unit2.completeStart();
+        unit1.completeStart();
+
+        // THEN
+        testTransitionObserver
+                .awaitCount(10); // make sure that START command arrives earlier than STOP
+
+        // WHEN
+        bus.sink().accept(command(unit3ID, STOP));
+        unit3.failStop();
+        unit2.completeStop();
+        unit1.completeStop();
+
+        // THEN
+        testTransitionObserver
+                .awaitCount(16);
         assertTracker(tracker);
     }
 

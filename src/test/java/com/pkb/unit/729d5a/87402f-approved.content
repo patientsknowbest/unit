@@ -1,0 +1,8 @@
+/*com.pkb.unit.ErrorTests.unsuccessfulTransitiveDependencyStopTransitionsItToFailedAndDependentsToStopped*/
+digraph { 
+unit1 [label="unit1 STOPPED"]
+unit1 -> unit2
+unit2 [label="unit2 STOPPED"]
+unit2 -> unit3
+unit3 [label="unit3 FAILED"]
+}
