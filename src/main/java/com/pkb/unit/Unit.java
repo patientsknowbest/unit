@@ -204,7 +204,7 @@ public abstract class Unit {
         }
     }
 
-    private void setAndPublishState(State state) {
+    private synchronized void setAndPublishState(State state) {
         setAndPublishState(state, "");
     }
 
