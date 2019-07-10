@@ -104,7 +104,7 @@ public abstract class Unit {
             return;
         }
         mandatoryDependencies.put(transition.unitId(), transition.current());
-        if (transition.previous() != STARTED && allDepsHaveStarted()) {
+        if (state == STARTING && transition.previous() != STARTED && allDepsHaveStarted()) {
             sendCommand(id, START);
         }
         if (transition.previous() == STARTED && transition.current() != STARTED) {
