@@ -164,11 +164,15 @@ public abstract class Unit {
         @Override
         public boolean handles(Command c) {
             // only start if current state is stopped
-            return c == START && (state == State.STOPPED || state == CREATED || state == STARTING);
+            return c == START && (state == State.STOPPED || state == CREATED || state == STARTING || state == STARTED);
         }
 
         @Override
         public void handle(Command c) {
+            if (state == STARTED) {
+                setAndPublishState(state, "Already STARTED. No operation executed");
+                return;
+            }
             setAndPublishState(STARTING);
             if (!allDepsHaveStarted()) {
                 // this could be better
@@ -189,11 +193,15 @@ public abstract class Unit {
 
         @Override
         public boolean handles(Command c) {
-            return c == STOP && (state == State.STARTED || state == FAILED || state == STOPPING || state == STARTING);
+            return c == STOP && (state == State.STARTED || state == FAILED || state == STOPPING || state == STARTING || state == STOPPED);
         }
 
         @Override
         public void handle(Command c) {
+            if (state == STOPPED) {
+                setAndPublishState(state, "Already STOPPED. No operation executed.");
+                return;
+            }
             setAndPublishState(STOPPING);
             HandleOutcome outcome = handleStop();
             if (outcome == HandleOutcome.SUCCESS) {
@@ -209,7 +217,7 @@ public abstract class Unit {
     }
 
     private void setAndPublishState(State state, String comment) {
-        unchecked(() -> this.owner.sink().accept(makeTransitionEvent(this.state, state)));
+        unchecked(() -> this.owner.sink().accept(makeTransitionEvent(this.state, state, comment)));
         this.state = state;
     }
 
