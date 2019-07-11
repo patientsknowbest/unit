@@ -209,8 +209,9 @@ public abstract class Unit {
     }
 
     private void setAndPublishState(State state, String comment) {
-        unchecked(() -> this.owner.sink().accept(makeTransitionEvent(this.state, state)));
+        State previous = this.state;
         this.state = state;
+        unchecked(() -> this.owner.sink().accept(makeTransitionEvent(previous, state)));
     }
 
     private class ShutdownHandler implements CommandHandler {
