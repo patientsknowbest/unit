@@ -1,7 +1,7 @@
 package com.pkb.unit;
 
+import static com.pkb.unit.Command.DISABLE;
 import static com.pkb.unit.Command.START;
-import static com.pkb.unit.Command.STOP;
 import static com.pkb.unit.TestCommon.assertTracker;
 import static com.pkb.unit.message.ImmutableMessage.message;
 
@@ -88,9 +88,86 @@ public class TransitionTests {
         assertTracker(tracker);
     }
 
-    // 1b5b68
+    // d3cdc4
     @Test
-    public void dependencyStartDoesNotStartStoppedDependent() throws Exception {
+    public void disableCommandTransitionsSingleUnitToDisabled() throws Exception {
+        // GIVEN
+        Bus bus = new LocalBus();
+        Tracker tracker = new Tracker(bus);
+        testTransitionObserver = testTransitionObserver(bus);
+        String unit1ID = "unit1";
+        FakeUnit unit1 = new FakeUnit(unit1ID, bus);
+        bus.sink().accept(command(unit1ID, START));
+        unit1.completeStart();
+
+        // WHEN
+        bus.sink().accept(command(unit1ID, DISABLE));
+        unit1.completeStop();
+
+        // THEN
+        testTransitionObserver
+                .awaitCount(4);
+        assertTracker(tracker);
+    }
+
+    // 78401e
+    @Test
+    public void disableCommandTransitionsMoreUnitsToDisabled() throws Exception {
+        // GIVEN
+        Bus bus = new LocalBus();
+        Tracker tracker = new Tracker(bus);
+        TestObserver<Message> testTransitionObserver = testTransitionObserver(bus);
+        String unit1ID = "unit1";
+        String unit2ID = "unit2";
+        FakeUnit unit1 = new FakeUnit(unit1ID, bus);
+        FakeUnit unit2 = new FakeUnit(unit2ID, bus);
+        bus.sink().accept(command(unit1ID, START));
+        unit1.completeStart();
+        bus.sink().accept(command(unit2ID, START));
+        unit2.completeStart();
+
+        // WHEN
+        bus.sink().accept(command(unit1ID, DISABLE));
+        unit1.completeStop();
+        bus.sink().accept(command(unit2ID, DISABLE));
+        unit2.completeStop();
+
+        // THEN
+        testTransitionObserver
+                .awaitCount(8);
+        assertTracker(tracker);
+    }
+
+    // 3c8925
+    @Test
+    public void whenSignleUnitAlreadyDisabledThenDisableDoesNothing() throws Exception {
+        // GIVEN
+        Bus bus = new LocalBus();
+        Tracker tracker = new Tracker(bus);
+        testTransitionObserver = testTransitionObserver(bus);
+        String unit1ID = "unit1";
+        FakeUnit unit1 = new FakeUnit(unit1ID, bus);
+        bus.sink().accept(command(unit1ID, START));
+        unit1.completeStart();
+        bus.sink().accept(command(unit1ID, DISABLE));
+        unit1.completeStop();
+        testTransitionObserver
+                .awaitCount(4);
+
+        // WHEN
+        bus.sink().accept(command(unit1ID, DISABLE));
+
+        // THEN
+        testTransitionObserver
+                .awaitCount(5);
+        assertTracker(tracker);
+    }
+
+    // FIXME: if unit2's START command arrives after that unit1 turns to DISABLED then unit1 turns to failed
+    // GDE-1373 would make it reliably testable via manually start unit1 before adding unit2 as its dependency
+    // 262d7c
+    @Test
+    public void dependencyStartDoesNotStartDisabledDependent() throws Exception {
         // GIVEN
         Bus bus = new LocalBus();
         Tracker tracker = new Tracker(bus);
@@ -103,9 +180,9 @@ public class TransitionTests {
 
         // WHEN
         bus.sink().accept(command(unit1ID, START)); // starts unit2 dependency as well
-        unit2.completeStart();
+        unit2.completeStart(); // unit2 reports CREATED here therefore unit1 receives START command from itself
         unit1.completeStart();
-        bus.sink().accept(command(unit1ID, STOP));
+        bus.sink().accept(command(unit1ID, DISABLE));
         unit2.completeStop();
         unit1.completeStop();
 
@@ -138,9 +215,9 @@ public class TransitionTests {
                 .test();
     }
 
-    private Message<Command> command(String targetUnitId, Command start) {
+    private Message<Command> command(String targetUnitId, Command command) {
         return message(Command.class)
                 .withTarget(targetUnitId)
-                .withPayload(start);
+                .withPayload(command);
     }
 }

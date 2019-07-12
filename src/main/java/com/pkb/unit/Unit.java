@@ -1,8 +1,11 @@
 package com.pkb.unit;
 
+import static com.pkb.unit.Command.DISABLE;
 import static com.pkb.unit.Command.START;
 import static com.pkb.unit.Command.STOP;
 import static com.pkb.unit.State.CREATED;
+import static com.pkb.unit.State.DISABLED;
+import static com.pkb.unit.State.DISABLING;
 import static com.pkb.unit.State.FAILED;
 import static com.pkb.unit.State.SHUTDOWN;
 import static com.pkb.unit.State.STARTED;
@@ -44,7 +47,8 @@ public abstract class Unit {
     private final List<CommandHandler> commandHandlers = List.of(
             new StartHandler(),
             new StopHandler(),
-            new ShutdownHandler()
+            new ShutdownHandler(),
+            new DisableHandler()
     );
 
 
@@ -211,7 +215,7 @@ public abstract class Unit {
     private void setAndPublishState(State state, String comment) {
         State previous = this.state;
         this.state = state;
-        unchecked(() -> this.owner.sink().accept(makeTransitionEvent(previous, state)));
+        unchecked(() -> this.owner.sink().accept(makeTransitionEvent(previous, state, comment)));
     }
 
     private class ShutdownHandler implements CommandHandler {
@@ -228,6 +232,31 @@ public abstract class Unit {
             dependenciesSubscription.dispose();
             reportStateSubscription.dispose();
             reportDependenciesSubscription.dispose();
+        }
+    }
+
+    private class DisableHandler implements CommandHandler {
+
+        @Override
+        public boolean handles(Command c) {
+            return c == DISABLE && (state == State.STOPPED || state == STARTED || state == STARTING || state == DISABLED);
+        }
+
+        @Override
+        public void handle(Command c) {
+            if (c == DISABLE && state == DISABLED) {
+                setAndPublishState(state, "Already DISABLED. No operation executed.");
+                return;
+            }
+            if (state != STOPPED) {
+                setAndPublishState(DISABLING);
+                HandleOutcome outcome = handleStop();
+                if (outcome == HandleOutcome.FAILURE) {
+                    setAndPublishState(FAILED);
+                    return;
+                }
+            }
+            setAndPublishState(DISABLED);
         }
     }
 

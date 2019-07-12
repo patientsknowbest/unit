@@ -1,0 +1,5 @@
+/*com.pkb.unit.TransitionTests.disableCommandTransitionsMoreUnitsToDisabled*/
+digraph { 
+unit1 [label="unit1 DISABLED"]
+unit2 [label="unit2 DISABLED"]
+}

@@ -9,5 +9,6 @@ public enum State {
     STARTING,
     SHUTDOWN,
     UNKNOWN,
-    DISABLED
+    DISABLED,
+    DISABLING
 }
