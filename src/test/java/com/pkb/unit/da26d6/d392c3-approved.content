@@ -1,0 +1,4 @@
+/*com.pkb.unit.TransitionTests.whenSingleUnitAlreadyShutdownThenShutdownDoesNothing*/
+digraph { 
+unit1 [label="unit1 SHUTDOWN"]
+}
