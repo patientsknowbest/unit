@@ -8,6 +8,8 @@ import java.util.concurrent.CountDownLatch;
 class FakeUnit extends Unit {
     private CountDownLatch cdlCompleteStart = new CountDownLatch(1);
     private CountDownLatch cdlCompleteStop = new CountDownLatch(1);
+    private boolean shouldFailStart;
+    private boolean shouldFailStop;
 
     public FakeUnit(String id, Bus owner) {
         super(id, owner);
@@ -21,6 +23,10 @@ class FakeUnit extends Unit {
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         }
+        if (shouldFailStart) {
+            System.out.println(id() + " start failed");
+            return HandleOutcome.FAILURE;
+        }
         System.out.println(id() + " started successfully");
         return HandleOutcome.SUCCESS;
     }
@@ -33,15 +39,30 @@ class FakeUnit extends Unit {
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         }
+        if (shouldFailStop) {
+            System.out.println(id() + " stop failed");
+            return HandleOutcome.FAILURE;
+        }
         System.out.println(id() + " stopped successfully");
         return HandleOutcome.SUCCESS;
     }
 
     public void completeStart() {
+        shouldFailStart = false;
         cdlCompleteStart.countDown();
     }
 
     public void completeStop() {
+        shouldFailStop = false;
+        cdlCompleteStop.countDown();
+    }
+    public void failStart() {
+        shouldFailStart = true;
+        cdlCompleteStart.countDown();
+    }
+
+    public void failStop() {
+        shouldFailStop = true;
         cdlCompleteStop.countDown();
     }
 }
