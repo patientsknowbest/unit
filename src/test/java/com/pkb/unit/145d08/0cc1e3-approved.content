@@ -2,7 +2,7 @@
 digraph { 
 unit4 [label="unit4 CREATED"]
 unit5 [label="unit5 CREATED"]
-unit1 [label="unit1 UNKNOWN"]
+unit1 [label="unit1 CREATED"]
 unit1 -> unit2
 unit2 [label="unit2 CREATED"]
 unit3 [label="unit3 CREATED"]

@@ -12,6 +12,9 @@ import com.pkb.unit.Tracker;
  * https://graphviz.gitlab.io/_pages/doc/info/lang.html
  */
 public class DOT {
+
+    public static final String STATE_UNKNOWN = "UNKNOWN";
+
     public static String toDOTFormat(Collection<Tracker.Unit> units) {
         return units.stream()
                 .map(DOT::toDOTFormat)
@@ -25,4 +28,5 @@ public class DOT {
                         .map(dependency -> unit.getId() + " -> " + dependency)
         ).collect(joining("\n"));
     }
+
 }

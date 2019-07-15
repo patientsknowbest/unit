@@ -8,7 +8,6 @@ import static com.pkb.unit.State.STARTED;
 import static com.pkb.unit.State.STARTING;
 import static com.pkb.unit.State.STOPPED;
 import static com.pkb.unit.State.STOPPING;
-import static com.pkb.unit.State.UNKNOWN;
 import static com.pkb.unit.Unchecked.unchecked;
 import static com.pkb.unit.message.ImmutableMessage.message;
 import static com.pkb.unit.message.payload.ImmutableDependencies.dependencies;
@@ -53,7 +52,7 @@ public abstract class Unit {
         return owner;
     }
 
-    private Map<String, State> mandatoryDependencies = new ConcurrentHashMap<>();
+    private Map<String, Optional<State>> mandatoryDependencies = new ConcurrentHashMap<>();
 
     public Unit(String id, Bus bus) {
         this.id = id;
@@ -96,7 +95,7 @@ public abstract class Unit {
         if (!mandatoryDependencies.containsKey(transition.unitId())) {
             return;
         }
-        mandatoryDependencies.put(transition.unitId(), transition.current());
+        mandatoryDependencies.put(transition.unitId(), Optional.of(transition.current()));
         if (transition.previous() != STARTED && allDepsHaveStarted()) {
             sendCommand(id, START);
         }
@@ -106,14 +105,14 @@ public abstract class Unit {
     }
 
     private boolean allDepsHaveStarted() {
-        return mandatoryDependencies.values().stream().allMatch(s -> s == STARTED);
+        return mandatoryDependencies.values().stream().allMatch(s -> s.isPresent() && s.get() == STARTED);
     }
 
     /**
      * @return true if this set did not already contain the specified element
      */
-    public State addDependency(String dependency) {
-        State ret = mandatoryDependencies.put(dependency, UNKNOWN);
+    public Optional<State> addDependency(String dependency) {
+        Optional<State> ret = mandatoryDependencies.put(dependency, Optional.empty());
 
         // Publish our new list of dependencies
         handleReportDependencies();

@@ -1,7 +1,6 @@
 package com.pkb.unit;
 
 import static com.pkb.unit.Filters.payloads;
-import static com.pkb.unit.State.UNKNOWN;
 import static com.pkb.unit.Unchecked.unchecked;
 import static com.pkb.unit.message.ImmutableMessage.message;
 import static java.util.Collections.emptyList;
@@ -37,7 +36,7 @@ public class Tracker {
         public Unit(String id) {
             this.id = id;
             this.dependencies = emptyList();
-            this.state = UNKNOWN;
+            state = State.CREATED;
         }
 
         public String getId() {
