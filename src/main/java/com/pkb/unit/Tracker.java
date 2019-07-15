@@ -8,6 +8,7 @@ import static java.util.Collections.unmodifiableList;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 
 import com.pkb.unit.message.payload.Dependencies;
@@ -16,27 +17,24 @@ import com.pkb.unit.message.payload.ReportDependenciesRequest;
 import com.pkb.unit.message.payload.ReportStateRequest;
 import com.pkb.unit.message.payload.Transition;
 
-import io.reactivex.disposables.Disposable;
-
 /**
  * Tracker
  * keeps track of the state of all units, for reporting purposes.
  */
 public class Tracker {
-    private Disposable newUnitsSubscription;
-    private Disposable transitionsSubscription;
-    private Disposable dependenciesSubscription;
 
     // Parallel model of the world
     public static class Unit {
         String id;
         List<String> dependencies;
-        State state;
+        Optional<State> state;
+        Optional<DesiredState> desiredState;
 
         public Unit(String id) {
             this.id = id;
             this.dependencies = emptyList();
-            state = State.CREATED;
+            this.state = Optional.empty();
+            this.desiredState = Optional.empty();
         }
 
         public String getId() {
@@ -52,21 +50,30 @@ public class Tracker {
         }
 
         public State getState() {
-            return state;
+            return state.orElseThrow(() -> new IllegalStateException("state not found for unit " + id));
         }
 
         public void setState(State state) {
-            this.state = state;
+            this.state = Optional.of(state);
         }
+
+        public DesiredState getDesired() {
+            return desiredState.orElseThrow(() -> new IllegalStateException("desiredState not found for unit " + id));
+        }
+
+        public void setDesired(DesiredState desiredState) {
+            this.desiredState = Optional.of(desiredState);
+        }
+
     }
     private Map<String, Unit> units = new ConcurrentHashMap<>();
 
     public Tracker(Bus bus) {
-        transitionsSubscription = payloads(bus.events(), Transition.class)
+        payloads(bus.events(), Transition.class)
                 .subscribe(this::handleTransition);
-        dependenciesSubscription = payloads(bus.events(), Dependencies.class)
+        payloads(bus.events(), Dependencies.class)
                 .subscribe(this::handleDependencies);
-        newUnitsSubscription = payloads(bus.events(), NewUnit.class)
+        payloads(bus.events(), NewUnit.class)
                 .subscribe(this::handleNewUnit);
 
         // Trigger at least one report of dependencies from each unit
@@ -94,6 +101,7 @@ public class Tracker {
                 unit = new Unit(transition.unitId());
             }
             unit.setState(transition.current());
+            unit.setDesired(transition.currentDesired());
             return unit;
         });
     }

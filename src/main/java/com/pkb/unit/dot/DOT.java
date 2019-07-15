@@ -23,7 +23,7 @@ public class DOT {
 
     private static String toDOTFormat(Tracker.Unit unit) {
         return Stream.concat(
-                Stream.of(unit.getId() + " [label=\"" + unit.getId() + " " + unit.getState() + "\"]"),
+                Stream.of(unit.getId() + " [label=\"" + unit.getId() + " " + unit.getDesired() + " " + unit.getState() + "\"]"),
                 unit.getDependencies().stream()
                         .map(dependency -> unit.getId() + " -> " + dependency)
         ).collect(joining("\n"));

@@ -39,12 +39,6 @@ public class TransitionTests {
         assertTracker(tracker);
     }
 
-    private TestObserver<Message> testTransitionObserver(Bus bus) {
-        return bus.events()
-                .filter(it -> it.messageType().equals(Transition.class))
-                .test();
-    }
-
     // 9070ca
     @Test
     public void startCommandTransitionsUnitToStarting() throws Exception {
@@ -201,6 +195,12 @@ public class TransitionTests {
         if (testTransitionObserver != null && !testTransitionObserver.isDisposed()) {
             testTransitionObserver.dispose();
         }
+    }
+
+    private TestObserver<Message> testTransitionObserver(Bus bus) {
+        return bus.events()
+                .filter(it -> it.messageType().equals(Transition.class))
+                .test();
     }
 
     private Message<Command> command(String targetUnitId, Command start) {

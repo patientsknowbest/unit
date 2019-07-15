@@ -6,7 +6,5 @@ public enum State {
     STOPPED,
     STOPPING,
     STARTED,
-    STARTING,
-    SHUTDOWN,
-    DISABLED
+    STARTING
 }

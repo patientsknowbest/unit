@@ -6,6 +6,7 @@ import java.util.Optional;
 import org.immutables.value.Value.Immutable;
 import org.immutables.value.Value.Style;
 
+import com.pkb.unit.DesiredState;
 import com.pkb.unit.State;
 
 /**
@@ -14,8 +15,10 @@ import com.pkb.unit.State;
 @Immutable
 @Style(of = "transition", allParameters = true)
 public interface Transition extends Serializable {
+    String unitId();
     State current();
     State previous();
-    String unitId();
+    DesiredState currentDesired();
+    DesiredState previousDesired();
     Optional<String> comment();
 }
