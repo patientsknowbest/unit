@@ -4,7 +4,6 @@ import static com.pkb.unit.Command.START;
 import static com.pkb.unit.Command.STOP;
 import static com.pkb.unit.State.CREATED;
 import static com.pkb.unit.State.FAILED;
-import static com.pkb.unit.State.SHUTDOWN;
 import static com.pkb.unit.State.STARTED;
 import static com.pkb.unit.State.STARTING;
 import static com.pkb.unit.State.STOPPED;
@@ -27,24 +26,18 @@ import com.pkb.unit.message.payload.ReportDependenciesRequest;
 import com.pkb.unit.message.payload.ReportStateRequest;
 import com.pkb.unit.message.payload.Transition;
 
-import io.reactivex.disposables.Disposable;
 import io.reactivex.schedulers.Schedulers;
 import io.vavr.collection.List;
 
 public abstract class Unit {
 
     private final String id;
-    private final Disposable commandSubscription;
-    private final Disposable dependenciesSubscription;
-    private final Disposable reportStateSubscription;
-    private final Disposable reportDependenciesSubscription;
     private State state;
     private final Bus owner;
 
     private final List<CommandHandler> commandHandlers = List.of(
             new StartHandler(),
-            new StopHandler(),
-            new ShutdownHandler()
+            new StopHandler()
     );
 
 
@@ -69,21 +62,21 @@ public abstract class Unit {
         // Commands might result in IO bound operations, e.g.
         // opening a database connection or connecting to an HTTP API.
         // Use the io() scheduler for this reason
-        commandSubscription = Filters.payloads(bus.events(), Command.class, id)
+        Filters.payloads(bus.events(), Command.class, id)
                 .observeOn(Schedulers.io())
                 .subscribe(this::handle);
 
         // Handling transitions & reporting state should _not_ do any IO work.
         // so we can execute these with the io() scheduler.
-        dependenciesSubscription = Filters.payloads(bus.events(), Transition.class)
+        Filters.payloads(bus.events(), Transition.class)
                 .observeOn(Schedulers.computation())
                 .subscribe(this::handleDependencyTransition);
 
-        reportStateSubscription = Filters.messages(bus.events(), ReportStateRequest.class, id)
+        Filters.messages(bus.events(), ReportStateRequest.class, id)
                 .observeOn(Schedulers.computation())
                 .subscribe(ignored -> handleReportState());
 
-        reportDependenciesSubscription = Filters.messages(bus.events(), ReportDependenciesRequest.class, id)
+        Filters.messages(bus.events(), ReportDependenciesRequest.class, id)
                 .observeOn(Schedulers.computation())
                 .subscribe(ignored -> handleReportDependencies());
 
@@ -221,23 +214,6 @@ public abstract class Unit {
         this.state = state;
     }
 
-    private class ShutdownHandler implements CommandHandler {
-
-        @Override
-        public boolean handles(Command c) {
-            return c == Command.SHUTDOWN && (state == State.STOPPED || state == FAILED);
-        }
-
-        @Override
-        public void handle(Command c) {
-            setAndPublishState(SHUTDOWN);
-            commandSubscription.dispose();
-            dependenciesSubscription.dispose();
-            reportStateSubscription.dispose();
-            reportDependenciesSubscription.dispose();
-        }
-    }
-
     public enum HandleOutcome {
         SUCCESS, FAILURE
     }
@@ -245,11 +221,6 @@ public abstract class Unit {
     abstract HandleOutcome handleStart();
 
     abstract HandleOutcome handleStop();
-
-    // utility
-    private Message<Transition> makeTransitionEvent(State previous, State current) {
-        return makeTransitionEvent(previous, current, "");
-    }
 
     private Message<Transition> makeTransitionEvent(State previous, State current, String comment) {
         return message(Transition.class)
