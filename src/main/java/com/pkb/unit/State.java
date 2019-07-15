@@ -8,6 +8,5 @@ public enum State {
     STARTED,
     STARTING,
     SHUTDOWN,
-    UNKNOWN,
     DISABLED
 }
