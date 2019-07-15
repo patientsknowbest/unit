@@ -1,5 +1,5 @@
 /*com.pkb.unit.ErrorTests.unsuccessfulStartTransitionsIndependentUnitsToFailed*/
 digraph { 
-unit1 [label="unit1 FAILED"]
-unit2 [label="unit2 FAILED"]
+unit1 [label="unit1 UNSET FAILED"]
+unit2 [label="unit2 UNSET FAILED"]
 }

@@ -22,11 +22,16 @@ public class DOT {
     }
 
     private static String toDOTFormat(Tracker.Unit unit) {
+
         return Stream.concat(
-                Stream.of(unit.getId() + " [label=\"" + unit.getId() + " " + unit.getDesired() + " " + unit.getState() + "\"]"),
+                Stream.of(unit.getId() + " [label=\"id=" + unit.getId() + " desiredState=" + desiredStateString(unit) + " actualState=" + unit.getState() + "\"]"),
                 unit.getDependencies().stream()
                         .map(dependency -> unit.getId() + " -> " + dependency)
         ).collect(joining("\n"));
+    }
+
+    private static String desiredStateString(Tracker.Unit unit) {
+        return String.valueOf(unit.getDesired()).toLowerCase();
     }
 
 }

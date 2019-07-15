@@ -1,4 +1,4 @@
 /*com.pkb.unit.ErrorTests.unsuccessfulStartTransitionsSingleUnitToFailed*/
 digraph { 
-unit1 [label="unit1 FAILED"]
+unit1 [label="id=unit1 desiredState=enabled actualState=FAILED"]
 }
