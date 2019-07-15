@@ -1,8 +1,8 @@
 /*com.pkb.unit.DependencyTests.testRemoveDependenciesFromDifferentDependencyTrees*/
 digraph { 
-unit1a [label="unit1a UNKNOWN"]
+unit1a [label="unit1a CREATED"]
 unit2b [label="unit2b CREATED"]
-unit1b [label="unit1b UNKNOWN"]
+unit1b [label="unit1b CREATED"]
 unit1b -> unit3b
 unit3a [label="unit3a CREATED"]
 unit2a [label="unit2a CREATED"]

@@ -36,7 +36,7 @@ public class Tracker {
         public Unit(String id) {
             this.id = id;
             this.dependencies = emptyList();
-            state = null;
+            state = State.CREATED;
         }
 
         public String getId() {

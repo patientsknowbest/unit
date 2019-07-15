@@ -5,7 +5,6 @@ import static java.util.stream.Collectors.joining;
 import java.util.Collection;
 import java.util.stream.Stream;
 
-import com.pkb.unit.State;
 import com.pkb.unit.Tracker;
 
 /**
@@ -24,13 +23,10 @@ public class DOT {
 
     private static String toDOTFormat(Tracker.Unit unit) {
         return Stream.concat(
-                Stream.of(unit.getId() + " [label=\"" + unit.getId() + " " + convertToString(unit.getState()) + "\"]"),
+                Stream.of(unit.getId() + " [label=\"" + unit.getId() + " " + unit.getState() + "\"]"),
                 unit.getDependencies().stream()
                         .map(dependency -> unit.getId() + " -> " + dependency)
         ).collect(joining("\n"));
     }
 
-    private static String convertToString(State state) {
-        return state == null ? STATE_UNKNOWN : state.toString();
-    }
 }
