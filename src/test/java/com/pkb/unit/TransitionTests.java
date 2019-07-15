@@ -1,6 +1,5 @@
 package com.pkb.unit;
 
-import static com.pkb.unit.Command.SHUTDOWN;
 import static com.pkb.unit.Command.START;
 import static com.pkb.unit.Command.STOP;
 import static com.pkb.unit.TestCommon.assertTracker;
@@ -190,65 +189,6 @@ public class TransitionTests {
         unit2.completeStop();
         unit1.completeStop();
         bus.sink().accept(command(unit2ID, STOP));
-
-        // THEN
-        testTransitionObserver
-                .awaitCount(11);
-        assertTracker(tracker);
-    }
-
-    // d392c3
-    @Test
-    public void whenSingleUnitAlreadyShutdownThenShutdownDoesNothing() throws Exception {
-        // GIVEN
-        Bus bus = new LocalBus();
-        Tracker tracker = new Tracker(bus);
-        String unitID = "unit1";
-        FakeUnit unit1 = new FakeUnit(unitID, bus);
-        testTransitionObserver = testTransitionObserver(bus);
-        bus.sink().accept(command(unitID, START));
-        unit1.completeStart();
-        bus.sink().accept(command(unitID, STOP));
-        unit1.completeStop();
-        bus.sink().accept(command(unitID, SHUTDOWN));
-
-        // WHEN
-        bus.sink().accept(command(unitID, SHUTDOWN));
-
-        // THEN
-        testTransitionObserver
-                .awaitCount(5);
-        assertTracker(tracker);
-    }
-
-    // ddc205
-    @Test
-    public void whenDependencyAlreadyShutdownThenShutdownDoesNothing() throws Exception {
-        // GIVEN
-        Bus bus = new LocalBus();
-        Tracker tracker = new Tracker(bus);
-        testTransitionObserver = testTransitionObserver(bus);
-        String unit1ID = "unit1";
-        String unit2ID = "unit2";
-        FakeUnit unit1 = new FakeUnit(unit1ID, bus);
-        FakeUnit unit2 = new FakeUnit(unit2ID, bus);
-        unit1.addDependency(unit2ID);
-
-        // WHEN
-        bus.sink().accept(command(unit1ID, START));
-        unit2.completeStart();
-        unit1.completeStart();
-
-        // THEN
-        testTransitionObserver
-                .awaitCount(6); // Make sure that START command arrives earlier than STOP
-
-        // WHEN
-        bus.sink().accept(command(unit2ID, STOP));
-        unit2.completeStop();
-        unit1.completeStop();
-        bus.sink().accept(command(unit2ID, SHUTDOWN));
-        bus.sink().accept(command(unit2ID, SHUTDOWN));
 
         // THEN
         testTransitionObserver
