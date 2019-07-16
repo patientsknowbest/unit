@@ -1,4 +1,0 @@
-/*com.pkb.unit.BasicUnitEventTests.initialStateIsCreated*/
-digraph { 
-unit1 [label="unit1 CREATED"]
-}

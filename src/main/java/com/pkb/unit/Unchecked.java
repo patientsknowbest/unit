@@ -2,7 +2,7 @@ package com.pkb.unit;
 
 public class Unchecked {
     @FunctionalInterface
-    interface RunnableWithThrows {
+    public interface RunnableWithThrows {
         void run() throws Exception;
     }
 

@@ -93,7 +93,10 @@ public abstract class Unit {
                 .observeOn(Schedulers.computation())
                 .subscribe(ignored -> handleReportDependencies());
 
+        // Advertise our full current state
         unchecked(() -> bus.sink().accept(message(NewUnit.class).withPayload(newUnit(id))));
+        handleReportDependencies();
+        handleReportState();
     }
 
     private void handleReportDependencies() {
