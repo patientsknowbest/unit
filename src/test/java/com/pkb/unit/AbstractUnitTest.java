@@ -18,13 +18,18 @@ import com.pkb.unit.tracker.Tracker;
 
 import io.reactivex.disposables.Disposable;
 import io.reactivex.observers.TestObserver;
+import io.reactivex.plugins.RxJavaPlugins;
+import io.reactivex.schedulers.TestScheduler;
 
 public class AbstractUnitTest {
     protected Bus bus;
+    protected TestScheduler testScheduler;
+
+    protected TestScheduler testComputationScheduler;
+    protected TestScheduler testIOScheduler;
 
     private Disposable trackerSubscription;
     private List<SystemState> systemStateHistory;
-    private TestObserver<SystemState> systemStateTestObserver;
 
     @Before
     public void setup() {
@@ -36,6 +41,7 @@ public class AbstractUnitTest {
     @After
     public void tearDown() {
         trackerSubscription.dispose();
+        RxJavaPlugins.reset();
     }
 
     @Rule
@@ -56,7 +62,24 @@ public class AbstractUnitTest {
     }
 
     protected void assertExpectedState(TestObserver<SystemState> testObserver, SystemState expected) {
+
         testObserver.awaitCount(1);
         testObserver.assertValue(expected);
+    }
+
+    protected void setupTestScheduler() {
+        testScheduler = new TestScheduler();
+        RxJavaPlugins.setComputationSchedulerHandler(i -> testScheduler);
+        RxJavaPlugins.setIoSchedulerHandler(i -> testScheduler);
+    }
+
+    protected void setupComputationTestScheduler() {
+        testComputationScheduler = new TestScheduler();
+        RxJavaPlugins.setComputationSchedulerHandler(i -> testComputationScheduler);
+    }
+
+    protected void setupIOTestScheduler() {
+        testIOScheduler = new TestScheduler();
+        RxJavaPlugins.setIoSchedulerHandler(i -> testIOScheduler);
     }
 }

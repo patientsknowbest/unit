@@ -1,89 +1,93 @@
 package com.pkb.unit;
 
+import static com.pkb.unit.Command.ENABLE;
 import static com.pkb.unit.Command.START;
 import static com.pkb.unit.Command.STOP;
+import static com.pkb.unit.DesiredState.ENABLED;
+import static com.pkb.unit.DesiredState.UNSET;
+import static com.pkb.unit.State.STARTED;
+import static com.pkb.unit.State.STARTING;
 import static com.pkb.unit.message.ImmutableMessage.message;
+import static com.pkb.unit.tracker.ImmutableSystemState.systemState;
+import static com.pkb.unit.tracker.ImmutableUnit.unit;
 
 import org.junit.After;
 import org.junit.Test;
 
 import com.pkb.unit.message.Message;
 import com.pkb.unit.message.payload.Transition;
+import com.pkb.unit.tracker.SystemState;
+
+import com.google.common.collect.ImmutableMap;
 
 import io.reactivex.observers.TestObserver;
 
-public class TransitionTests {
+public class TransitionTests extends AbstractUnitTest {
 
     private TestObserver<Message> testTransitionObserver;
 
-    /**
-     * START command should trigger the
-     * ffc147
-     */
     @Test
-    public void startCommandTransitionsSingleUnitToStarting() throws Exception {
+    public void enableCommandTransitionsSingleUnitToStarting() throws Exception {
         // GIVEN
-        Bus bus = new LocalBus();
-        //Tracker tracker = new Tracker(bus);
-        String unitID = "unit1";
-        new FakeUnit(unitID, bus);
-        TestObserver<Message> testTransitionObserver = testTransitionObserver(bus);
+        setupComputationTestScheduler();
+        SystemState expected = systemState(
+                ImmutableMap.of("unit1", unit("unit1").withState(STARTING).withDesiredState(ENABLED))
+        );
+        TestObserver<SystemState> testObserver = testObserver(expected);
 
         // WHEN
-        bus.sink().accept(command(unitID, START));
+        new FakeUnit("unit1", bus);
+        bus.sink().accept(command("unit1", ENABLE));
 
         // THEN
-        testTransitionObserver
-                .awaitCount(1);
-        //assertTracker(tracker);
+        testComputationScheduler.triggerActions();
+        assertExpectedState(testObserver, expected);
     }
 
-    // 9070ca
     @Test
-    public void startCommandTransitionsUnitToStarting() throws Exception {
+    public void enableCommandTransitionsUnitAndDependencyToStarting() throws Exception {
         // GIVEN
-        Bus bus = new LocalBus();
-        //Tracker tracker = new Tracker(bus);
-        String unit1ID = "unit1";
-        String unit2ID = "unit2";
-        FakeUnit unit1 = new FakeUnit(unit1ID, bus);
-        FakeUnit unit2 = new FakeUnit(unit2ID, bus);
-        TestObserver<Message> testTransitionObserver = testTransitionObserver(bus);
+        setupComputationTestScheduler();
+        SystemState expected = systemState(
+                ImmutableMap.of(
+                        "unit1", unit("unit1").withState(STARTING).withDesiredState(ENABLED).withDependencies("unit2"),
+                        "unit2", unit("unit2").withState(STARTING).withDesiredState(UNSET)
+                )
+        );
+        TestObserver<SystemState> testObserver = testObserver(expected);
 
         // WHEN
-        unit1.addDependency(unit2ID);
+        FakeUnit unit1 = new FakeUnit("unit1", bus);
+        FakeUnit unit2 = new FakeUnit("unit2", bus);
+        unit1.addDependency("unit2");
+        bus.sink().accept(command("unit1", ENABLE));
 
-        bus.sink().accept(command(unit1ID, START));
-
-        testTransitionObserver
-                .awaitCount(3); // Should see 2 transitions
-
-        //assertTracker(tracker);
+        testComputationScheduler.triggerActions();
+        assertExpectedState(testObserver, expected);
     }
 
-    // 7c64a1
     @Test
-    public void startCompleteTransitionsUnitsToStarted() throws Exception {
+    public void completeStartTransitionsUnitsToStarted() throws Exception {
         // GIVEN
-        Bus bus = new LocalBus();
-        //Tracker tracker = new Tracker(bus);
-        String unit1ID = "unit1";
-        String unit2ID = "unit2";
-        FakeUnit unit1 = new FakeUnit(unit1ID, bus);
-        FakeUnit unit2 = new FakeUnit(unit2ID, bus);
-        TestObserver<Message> testTransitionObserver = testTransitionObserver(bus);
+        setupTestScheduler();
+        SystemState expected = systemState(
+                ImmutableMap.of(
+                        "unit1", unit("unit1").withState(STARTED).withDesiredState(ENABLED).withDependencies("unit2"),
+                        "unit2", unit("unit2").withState(STARTED).withDesiredState(UNSET)
+                )
+        );
+        TestObserver<SystemState> testObserver = testObserver(expected);
 
         // WHEN
-        unit1.addDependency(unit2ID);
-
-        bus.sink().accept(command(unit1ID, START));
+        FakeUnit unit1 = new FakeUnit("unit1", bus);
+        FakeUnit unit2 = new FakeUnit("unit2", bus);
+        unit1.addDependency("unit2");
+        bus.sink().accept(command("unit1", ENABLE));
         unit2.completeStart();
         unit1.completeStart();
 
-        testTransitionObserver
-                .awaitCount(6);
-
-        //assertTracker(tracker);
+        testScheduler.triggerActions();
+        assertExpectedState(testObserver, expected);
     }
 
     // ccdaf8

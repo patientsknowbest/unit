@@ -30,6 +30,7 @@ import com.pkb.unit.message.payload.ReportDependenciesRequest;
 import com.pkb.unit.message.payload.ReportStateRequest;
 import com.pkb.unit.message.payload.Transition;
 
+import io.reactivex.Observable;
 import io.reactivex.schedulers.Schedulers;
 import io.vavr.collection.List;
 
@@ -72,15 +73,10 @@ public abstract class Unit {
         this.id = id;
         this.bus = bus;
 
-        // Commands might result in IO bound operations, e.g.
-        // opening a database connection or connecting to an HTTP API.
-        // Use the io() scheduler for this reason
         Filters.payloads(bus.events(), Command.class, id)
-                .observeOn(Schedulers.io())
+                .observeOn(Schedulers.computation())
                 .subscribe(this::handle);
 
-        // Handling transitions & reporting state should _not_ do any IO work.
-        // so we can execute these with the io() scheduler.
         Filters.payloads(bus.events(), Transition.class)
                 .observeOn(Schedulers.computation())
                 .subscribe(this::handleDependencyTransition);
@@ -150,16 +146,13 @@ public abstract class Unit {
     }
 
     private synchronized void handle(Command command) {
-        State previous = state;
-        DesiredState previousDesired = desiredState;
         try {
             commandHandlers
                     .find(ch -> ch.handles(command))
                     .getOrElseThrow(() -> new IllegalStateException("No handler found for command " + command))
                     .handle(command);
         } catch (Exception e) {
-            state = FAILED;
-            unchecked(() -> bus.sink().accept(makeTransitionEvent(previous, previousDesired, e.getMessage())));
+            setAndPublishState(FAILED, e.getMessage());
         }
     }
 
@@ -227,12 +220,15 @@ public abstract class Unit {
                 return;
             }
 
-            HandleOutcome outcome = handleStart();
-            if (outcome == HandleOutcome.SUCCESS) {
-                setAndPublishState(STARTED);
-            } else {
-                setAndPublishState(FAILED);
-            }
+            Observable.fromCallable(Unit.this::handleStart)
+                    .subscribeOn(Schedulers.io())
+                    .subscribe(outcome -> {
+                        if (outcome == HandleOutcome.SUCCESS) {
+                            setAndPublishState(STARTED);
+                        } else {
+                            setAndPublishState(FAILED);
+                        }
+                    });
         }
     }
 
@@ -250,27 +246,32 @@ public abstract class Unit {
                 return;
             }
             setAndPublishState(STOPPING);
-            HandleOutcome outcome = handleStop();
-            if (outcome == HandleOutcome.SUCCESS) {
-                setAndPublishState(STOPPED);
-            } else {
-                setAndPublishState(FAILED);
-            }
+            Observable.fromCallable(Unit.this::handleStop)
+                    .subscribeOn(Schedulers.io())
+                    .subscribe(outcome -> {
+                        if (outcome == HandleOutcome.SUCCESS) {
+                            setAndPublishState(STOPPED);
+                        } else {
+                            setAndPublishState(FAILED);
+                        }
 
-            // Take action to return to the desired state.
-            if (desiredState == ENABLED) {
-                sendCommand(id, START);
-            }
+                        // Take action to return to the desired state.
+                        if (desiredState == ENABLED) {
+                            sendCommand(id, START);
+                        }
+                    });
         }
     }
 
-    private void setAndPublishState(State state) {
-        setAndPublishState(state, "");
+    private void setAndPublishState(State newState) {
+        setAndPublishState(newState, "");
     }
 
-    private void setAndPublishState(State state, String comment) {
-        this.state = state;
-        unchecked(() -> this.bus.sink().accept(makeTransitionEvent(this.state, desiredState, comment)));
+    private void setAndPublishState(State newState, String comment) {
+        State previous = this.state;
+        this.state = newState;
+        unchecked(() -> this.bus.sink().accept(makeTransitionEvent(previous
+                , desiredState, comment)));
     }
 
     public enum HandleOutcome {
