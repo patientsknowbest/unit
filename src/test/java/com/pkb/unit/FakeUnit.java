@@ -1,18 +1,22 @@
 package com.pkb.unit;
 
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 /**
  * A fake
  */
 class FakeUnit extends Unit {
+    public static long RETRY_PERIOD = 1;
+    public static TimeUnit RETRY_PERIOD_UNIT = TimeUnit.SECONDS;
+
     private CountDownLatch cdlCompleteStart = new CountDownLatch(1);
     private CountDownLatch cdlCompleteStop = new CountDownLatch(1);
     private boolean shouldFailStart;
     private boolean shouldFailStop;
 
     public FakeUnit(String id, Bus owner) {
-        super(id, owner);
+        super(id, owner, RETRY_PERIOD, RETRY_PERIOD_UNIT);
     }
 
     @Override
