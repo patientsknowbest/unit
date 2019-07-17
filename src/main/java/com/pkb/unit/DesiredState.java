@@ -19,7 +19,7 @@ public enum DesiredState {
     DISABLED,
 
     /**
-     * Desired state need not be defined for every unit. If a unit is a dependency of another top-leven unit,
+     * Desired state need not be defined for every unit. If a unit is a dependency only and not directly used by client code,
      * it doesn't try to meet any particular state on it's own.
      */
     UNSET
