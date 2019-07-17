@@ -14,6 +14,7 @@
         <vavr.version>0.10.0</vavr.version>
         <rxrelay.version>2.1.0</rxrelay.version>
         <approvalcrest.version>0.21</approvalcrest.version>
+        <guava.version>28.0-jre</guava.version>
     </properties>
     <dependencies>
         <dependency>
@@ -49,6 +50,12 @@
             <artifactId>approvalcrest</artifactId>
             <version>${approvalcrest.version}</version>
             <scope>test</scope>
+        </dependency>
+        <!-- https://mvnrepository.com/artifact/com.google.guava/guava -->
+        <dependency>
+            <groupId>com.google.guava</groupId>
+            <artifactId>guava</artifactId>
+            <version>${guava.version}</version>
         </dependency>
 
     </dependencies>

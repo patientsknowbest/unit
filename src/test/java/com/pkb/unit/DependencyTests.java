@@ -1,5 +1,10 @@
 package com.pkb.unit;
 
+import static com.pkb.unit.DesiredState.UNSET;
+import static com.pkb.unit.State.CREATED;
+import static com.pkb.unit.tracker.ImmutableSystemState.systemState;
+import static com.pkb.unit.tracker.ImmutableUnit.unit;
+
 import org.junit.After;
 import org.junit.Test;
 
@@ -10,7 +15,7 @@ import com.pkb.unit.message.payload.Transition;
 import io.reactivex.observers.TestObserver;
 
 // 145d08
-public class DependencyTests {
+public class DependencyTests extends AbstractUnitTest {
 
     private TestObserver<Message> testTransitionObserver;
     private TestObserver<Message> testDependencyObserver;
@@ -40,8 +45,9 @@ public class DependencyTests {
     @Test
     public void testAddMoreDependencies() throws Exception {
         // GIVEN
-        Bus bus = new LocalBus();
-        //Tracker tracker = new Tracker(bus);
+        setupComputationAndIOTestScheduler();
+
+        // WHEN
         String unit1ID = "unit1";
         String unit2ID = "unit2";
         String unit3ID = "unit3";
@@ -52,18 +58,19 @@ public class DependencyTests {
         FakeUnit unit3 = new FakeUnit(unit3ID, bus);
         FakeUnit unit4 = new FakeUnit(unit4ID, bus);
         FakeUnit unit5 = new FakeUnit(unit5ID, bus);
-        testTransitionObserver = testTransitionObserver(bus);
 
-        // WHEN
         unit1.addDependency(unit2ID);
         unit1.addDependency(unit3ID);
         unit1.addDependency(unit4ID);
         unit1.addDependency(unit5ID);
-        testTransitionObserver
-                .awaitCount(4);
 
-        // THEN
-        //assertTracker(tracker);
+        assertLatestState(systemState().addUnits(
+                unit("unit1").withState(CREATED).withDesiredState(UNSET).withDependencies("unit2", "unit3", "unit4", "unit5"),
+                unit("unit2").withState(CREATED).withDesiredState(UNSET),
+                unit("unit3").withState(CREATED).withDesiredState(UNSET),
+                unit("unit4").withState(CREATED).withDesiredState(UNSET),
+                unit("unit5").withState(CREATED).withDesiredState(UNSET)
+        ).build());
     }
 
     // 0bb308
