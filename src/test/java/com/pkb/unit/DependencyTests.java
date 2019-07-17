@@ -1,7 +1,5 @@
 package com.pkb.unit;
 
-import static com.pkb.unit.message.ImmutableMessage.message;
-
 import org.junit.After;
 import org.junit.Test;
 
@@ -458,11 +456,5 @@ public class DependencyTests {
         return bus.events()
                 .filter(it -> it.messageType().equals(Dependencies.class))
                 .test();
-    }
-
-    private Message<Command> command(String targetUnitId, Command start) {
-        return message(Command.class)
-                .withTarget(targetUnitId)
-                .withPayload(start);
     }
 }

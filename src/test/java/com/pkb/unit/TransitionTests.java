@@ -8,13 +8,10 @@ import static com.pkb.unit.DesiredState.UNSET;
 import static com.pkb.unit.State.STARTED;
 import static com.pkb.unit.State.STARTING;
 import static com.pkb.unit.State.STOPPED;
-import static com.pkb.unit.message.ImmutableMessage.message;
 import static com.pkb.unit.tracker.ImmutableSystemState.systemState;
 import static com.pkb.unit.tracker.ImmutableUnit.unit;
 
 import org.junit.Test;
-
-import com.pkb.unit.message.Message;
 
 public class TransitionTests extends AbstractUnitTest {
     @Test
@@ -195,11 +192,5 @@ public class TransitionTests extends AbstractUnitTest {
         assertLatestState(systemState().addUnits(
                 unit("unit1").withDesiredState(UNSET).withState(STOPPED).withDependencies("unit2"),
                 unit("unit2").withDesiredState(UNSET).withState(STOPPED)).build());
-    }
-
-    private Message<Command> command(String target, Command start) {
-        return message(Command.class)
-                .withTarget(target)
-                .withPayload(start);
     }
 }
