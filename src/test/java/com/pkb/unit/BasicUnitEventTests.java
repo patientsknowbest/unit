@@ -1,21 +1,24 @@
 package com.pkb.unit;
 
-import static com.pkb.unit.TestCommon.assertTracker;
+import static com.pkb.unit.DesiredState.UNSET;
+import static com.pkb.unit.State.CREATED;
+import static com.pkb.unit.tracker.ImmutableSystemState.systemState;
+import static com.pkb.unit.tracker.ImmutableUnit.unit;
 
 import org.junit.Test;
 
-public class BasicUnitEventTests {
-
-    // d02f15
+public class BasicUnitEventTests extends AbstractUnitTest {
     @Test
-    public void initialStateIsCreated() throws Exception {
+    public void initialStateIsCreated() {
         // GIVEN
-        Bus bus = new LocalBus();
-        Tracker tracker = new Tracker(bus);
+        setupComputationAndIOTestScheduler();
+
         // WHEN
         new FakeUnit("unit1", bus);
-        // THEN
-        assertTracker(tracker);
-    }
+        testScheduler.triggerActions();
 
+        // THEN
+        assertLatestState(systemState().addUnits(
+                unit("unit1").withState(CREATED).withDesiredState(UNSET)).build());
+    }
 }

@@ -1,469 +1,423 @@
 package com.pkb.unit;
 
-import static com.pkb.unit.TestCommon.assertTracker;
-import static com.pkb.unit.message.ImmutableMessage.message;
+import static com.pkb.unit.DesiredState.UNSET;
+import static com.pkb.unit.State.CREATED;
+import static com.pkb.unit.tracker.ImmutableSystemState.systemState;
+import static com.pkb.unit.tracker.ImmutableUnit.unit;
 
-import org.junit.After;
 import org.junit.Test;
 
-import com.pkb.unit.message.Message;
-import com.pkb.unit.message.payload.Dependencies;
-import com.pkb.unit.message.payload.Transition;
+public class DependencyTests extends AbstractUnitTest {
 
-import io.reactivex.observers.TestObserver;
-
-// 145d08
-public class DependencyTests {
-
-    private TestObserver<Message> testTransitionObserver;
-    private TestObserver<Message> testDependencyObserver;
-
-    // fe7390
     @Test
     public void testAddOneDependency() throws Exception {
         // GIVEN
-        Bus bus = new LocalBus();
-        Tracker tracker = new Tracker(bus);
+        setupComputationTestScheduler();
         String unit1ID = "unit1";
         String unit2ID = "unit2";
-        FakeUnit unit1 = new FakeUnit(unit1ID, bus);
-        FakeUnit unit2 = new FakeUnit(unit2ID, bus);
-        testTransitionObserver = testTransitionObserver(bus);
 
         // WHEN
+        FakeUnit unit1 = new FakeUnit(unit1ID, bus);
+        FakeUnit unit2 = new FakeUnit(unit2ID, bus);
         unit1.addDependency(unit2ID);
-        testTransitionObserver
-                .awaitCount(1); // Should see 1 transition
+        testComputationScheduler.triggerActions();
 
         // THEN
-        assertTracker(tracker);
+        assertLatestState(systemState().addUnits(
+                unit(unit1ID).withState(CREATED).withDesiredState(UNSET).withDependencies(unit2ID),
+                unit(unit2ID).withState(CREATED).withDesiredState(UNSET)
+        ).build());
     }
 
-    // 93d1e2
     @Test
     public void testAddMoreDependencies() throws Exception {
         // GIVEN
-        Bus bus = new LocalBus();
-        Tracker tracker = new Tracker(bus);
+        setupComputationTestScheduler();
         String unit1ID = "unit1";
         String unit2ID = "unit2";
         String unit3ID = "unit3";
         String unit4ID = "unit4";
-        String unit5ID = "unit5";
+
+        // WHEN
         FakeUnit unit1 = new FakeUnit(unit1ID, bus);
         FakeUnit unit2 = new FakeUnit(unit2ID, bus);
         FakeUnit unit3 = new FakeUnit(unit3ID, bus);
         FakeUnit unit4 = new FakeUnit(unit4ID, bus);
-        FakeUnit unit5 = new FakeUnit(unit5ID, bus);
-        testTransitionObserver = testTransitionObserver(bus);
-
-        // WHEN
         unit1.addDependency(unit2ID);
         unit1.addDependency(unit3ID);
         unit1.addDependency(unit4ID);
-        unit1.addDependency(unit5ID);
-        testTransitionObserver
-                .awaitCount(4);
+        testComputationScheduler.triggerActions();
 
         // THEN
-        assertTracker(tracker);
+        assertLatestState(systemState().addUnits(
+                unit(unit1ID).withState(CREATED).withDesiredState(UNSET).withDependencies(unit2ID, unit3ID, unit4ID),
+                unit(unit2ID).withState(CREATED).withDesiredState(UNSET),
+                unit(unit3ID).withState(CREATED).withDesiredState(UNSET),
+                unit(unit4ID).withState(CREATED).withDesiredState(UNSET)
+        ).build());
     }
 
-    // 0bb308
     @Test
     public void testAddOneTransitiveDependency() throws Exception {
         // GIVEN
-        Bus bus = new LocalBus();
-        Tracker tracker = new Tracker(bus);
+        setupComputationTestScheduler();
         String unit1ID = "unit1";
         String unit2ID = "unit2";
         String unit3ID = "unit3";
+
+        // WHEN
         FakeUnit unit1 = new FakeUnit(unit1ID, bus);
         FakeUnit unit2 = new FakeUnit(unit2ID, bus);
         FakeUnit unit3 = new FakeUnit(unit3ID, bus);
-        testTransitionObserver = testTransitionObserver(bus);
-
-        // WHEN
         unit1.addDependency(unit2ID);
         unit2.addDependency(unit3ID);
-        testTransitionObserver
-                .awaitCount(2);
+        testComputationScheduler.triggerActions();
 
         // THEN
-        assertTracker(tracker);
+        assertLatestState(systemState().addUnits(
+                unit(unit1ID).withState(CREATED).withDesiredState(UNSET).withDependencies(unit2ID),
+                unit(unit2ID).withState(CREATED).withDesiredState(UNSET).withDependencies(unit3ID),
+                unit(unit3ID).withState(CREATED).withDesiredState(UNSET)
+        ).build());
     }
 
-    // 5820cc
     @Test
     public void testAddMoreTransitiveDependencies() throws Exception {
         // GIVEN
-        Bus bus = new LocalBus();
-        Tracker tracker = new Tracker(bus);
+        setupComputationTestScheduler();
         String unit1ID = "unit1";
         String unit2ID = "unit2";
         String unit3ID = "unit3";
         String unit4ID = "unit4";
         String unit5ID = "unit5";
+
+        // WHEN
         FakeUnit unit1 = new FakeUnit(unit1ID, bus);
         FakeUnit unit2 = new FakeUnit(unit2ID, bus);
         FakeUnit unit3 = new FakeUnit(unit3ID, bus);
         FakeUnit unit4 = new FakeUnit(unit4ID, bus);
         FakeUnit unit5 = new FakeUnit(unit5ID, bus);
-        testTransitionObserver = testTransitionObserver(bus);
-
-        // WHEN
         unit1.addDependency(unit2ID);
         unit2.addDependency(unit3ID);
         unit2.addDependency(unit4ID);
         unit2.addDependency(unit5ID);
-        testTransitionObserver
-                .awaitCount(4);
+        testComputationScheduler.triggerActions();
 
         // THEN
-        assertTracker(tracker);
+        assertLatestState(systemState().addUnits(
+                unit(unit1ID).withState(CREATED).withDesiredState(UNSET).withDependencies(unit2ID),
+                unit(unit2ID).withState(CREATED).withDesiredState(UNSET).withDependencies(unit3ID, unit4ID, unit5ID),
+                unit(unit3ID).withState(CREATED).withDesiredState(UNSET),
+                unit(unit4ID).withState(CREATED).withDesiredState(UNSET),
+                unit(unit5ID).withState(CREATED).withDesiredState(UNSET)
+        ).build());
     }
 
-    // 5a9f25
     @Test
     public void testAddTwoDepthTransitiveDependency() throws Exception {
         // GIVEN
-        Bus bus = new LocalBus();
-        Tracker tracker = new Tracker(bus);
+        setupComputationTestScheduler();
         String unit1ID = "unit1";
         String unit2ID = "unit2";
         String unit3ID = "unit3";
         String unit4ID = "unit4";
+
+        // WHEN
         FakeUnit unit1 = new FakeUnit(unit1ID, bus);
         FakeUnit unit2 = new FakeUnit(unit2ID, bus);
         FakeUnit unit3 = new FakeUnit(unit3ID, bus);
         FakeUnit unit4 = new FakeUnit(unit4ID, bus);
-        testTransitionObserver = testTransitionObserver(bus);
-
-        // WHEN
         unit1.addDependency(unit2ID);
         unit2.addDependency(unit3ID);
         unit3.addDependency(unit4ID);
-        testTransitionObserver
-                .awaitCount(3);
+        testComputationScheduler.triggerActions();
 
         // THEN
-        assertTracker(tracker);
+        assertLatestState(systemState().addUnits(
+                unit(unit1ID).withState(CREATED).withDesiredState(UNSET).withDependencies(unit2ID),
+                unit(unit2ID).withState(CREATED).withDesiredState(UNSET).withDependencies(unit3ID),
+                unit(unit3ID).withState(CREATED).withDesiredState(UNSET).withDependencies(unit4ID),
+                unit(unit4ID).withState(CREATED).withDesiredState(UNSET)
+        ).build());
     }
 
-    // 4eb86c
     @Test
     public void testAddMoreTwoDepthTransitiveDependencies() throws Exception {
         // GIVEN
-        Bus bus = new LocalBus();
-        Tracker tracker = new Tracker(bus);
+        setupComputationTestScheduler();
         String unit1ID = "unit1";
         String unit2ID = "unit2";
         String unit3ID = "unit3";
         String unit4ID = "unit4";
         String unit5ID = "unit5";
+
+        // WHEN
         FakeUnit unit1 = new FakeUnit(unit1ID, bus);
         FakeUnit unit2 = new FakeUnit(unit2ID, bus);
         FakeUnit unit3 = new FakeUnit(unit3ID, bus);
         FakeUnit unit4 = new FakeUnit(unit4ID, bus);
         FakeUnit unit5 = new FakeUnit(unit5ID, bus);
-        testTransitionObserver = testTransitionObserver(bus);
-
-        // WHEN
         unit1.addDependency(unit2ID);
         unit2.addDependency(unit3ID);
         unit3.addDependency(unit4ID);
         unit3.addDependency(unit5ID);
-        testTransitionObserver
-                .awaitCount(4);
+        testComputationScheduler.triggerActions();
 
         // THEN
-        assertTracker(tracker);
+        assertLatestState(systemState().addUnits(
+                unit(unit1ID).withState(CREATED).withDesiredState(UNSET).withDependencies(unit2ID),
+                unit(unit2ID).withState(CREATED).withDesiredState(UNSET).withDependencies(unit3ID),
+                unit(unit3ID).withState(CREATED).withDesiredState(UNSET).withDependencies(unit4ID, unit5ID),
+                unit(unit4ID).withState(CREATED).withDesiredState(UNSET),
+                unit(unit5ID).withState(CREATED).withDesiredState(UNSET)
+        ).build());
     }
 
-    // 2e2f50
     @Test
     public void testAddDependenciesToDifferentDependencyTrees() throws Exception {
         // GIVEN
-        Bus bus = new LocalBus();
-        Tracker tracker = new Tracker(bus);
-        String unit1aID = "unit1a";
-        String unit2aID = "unit2a";
-        String unit3aID = "unit3a";
-        String unit1bID = "unit1b";
-        String unit2bID = "unit2b";
-        String unit3bID = "unit3b";
-        FakeUnit unit1a = new FakeUnit(unit1aID, bus);
-        FakeUnit unit2a = new FakeUnit(unit2aID, bus);
-        FakeUnit unit3a = new FakeUnit(unit3aID, bus);
-        FakeUnit unit1b = new FakeUnit(unit1bID, bus);
-        FakeUnit unit2b = new FakeUnit(unit2bID, bus);
-        FakeUnit unit3b = new FakeUnit(unit3bID, bus);
-        testTransitionObserver = testTransitionObserver(bus);
+        setupComputationTestScheduler();
+        String unitA1ID = "unitA1";
+        String unitA2ID = "unitA2";
+        String unitA3ID = "unitA3";
+        String unitB1ID = "unitB1";
+        String unitB2ID = "unitB2";
+        String unitB3ID = "unitB3";
 
         // WHEN
-        unit1a.addDependency(unit2aID);
-        unit1a.addDependency(unit3aID);
-        unit1b.addDependency(unit2bID);
-        unit1b.addDependency(unit3bID);
-        testTransitionObserver
-                .awaitCount(4);
+        FakeUnit unit1a = new FakeUnit(unitA1ID, bus);
+        FakeUnit unit2a = new FakeUnit(unitA2ID, bus);
+        FakeUnit unit3a = new FakeUnit(unitA3ID, bus);
+        FakeUnit unit1b = new FakeUnit(unitB1ID, bus);
+        FakeUnit unit2b = new FakeUnit(unitB2ID, bus);
+        FakeUnit unit3b = new FakeUnit(unitB3ID, bus);
+        unit1a.addDependency(unitA2ID);
+        unit1a.addDependency(unitA3ID);
+        unit1b.addDependency(unitB2ID);
+        unit1b.addDependency(unitB3ID);
+        testComputationScheduler.triggerActions();
 
         // THEN
-        assertTracker(tracker);
+        assertLatestState(systemState().addUnits(
+                unit(unitA1ID).withState(CREATED).withDesiredState(UNSET).withDependencies(unitA2ID, unitA3ID),
+                unit(unitA2ID).withState(CREATED).withDesiredState(UNSET),
+                unit(unitA3ID).withState(CREATED).withDesiredState(UNSET),
+                unit(unitB1ID).withState(CREATED).withDesiredState(UNSET).withDependencies(unitB2ID, unitB3ID),
+                unit(unitB2ID).withState(CREATED).withDesiredState(UNSET),
+                unit(unitB3ID).withState(CREATED).withDesiredState(UNSET)
+        ).build());
     }
 
-    // fc37f4
     @Test
     public void testRemoveOneDependency() throws Exception {
         // GIVEN
-        Bus bus = new LocalBus();
-        Tracker tracker = new Tracker(bus);
+        setupComputationTestScheduler();
         String unit1ID = "unit1";
         String unit2ID = "unit2";
-        FakeUnit unit1 = new FakeUnit(unit1ID, bus);
-        FakeUnit unit2 = new FakeUnit(unit2ID, bus);
-        testTransitionObserver = testTransitionObserver(bus);
-        unit1.addDependency(unit2ID);
-        testTransitionObserver
-                .awaitCount(1); // should see 1 transition because a Unit.addDependency requests a report
-        testDependencyObserver = testDependencyObserver(bus);
 
         // WHEN
+        FakeUnit unit1 = new FakeUnit(unit1ID, bus);
+        FakeUnit unit2 = new FakeUnit(unit2ID, bus);
+        unit1.addDependency(unit2ID);
         unit1.removeDependency(unit2ID);
-        testDependencyObserver
-                .awaitCount(1); // Should see 1 dependeny report
+        testComputationScheduler.triggerActions();
 
         // THEN
-        assertTracker(tracker);
+        assertLatestState(systemState().addUnits(
+                unit(unit1ID).withState(CREATED).withDesiredState(UNSET),
+                unit(unit2ID).withState(CREATED).withDesiredState(UNSET)
+        ).build());
     }
 
-    // bb26eb
     @Test
     public void testRemoveMoreDependencies() throws Exception {
         // GIVEN
-        Bus bus = new LocalBus();
-        Tracker tracker = new Tracker(bus);
+        setupComputationTestScheduler();
         String unit1ID = "unit1";
         String unit2ID = "unit2";
         String unit3ID = "unit3";
         String unit4ID = "unit4";
+
+        // WHEN
         FakeUnit unit1 = new FakeUnit(unit1ID, bus);
         FakeUnit unit2 = new FakeUnit(unit2ID, bus);
         FakeUnit unit3 = new FakeUnit(unit3ID, bus);
         FakeUnit unit4 = new FakeUnit(unit4ID, bus);
-        testTransitionObserver = testTransitionObserver(bus);
         unit1.addDependency(unit2ID);
         unit1.addDependency(unit3ID);
         unit1.addDependency(unit4ID);
-        testTransitionObserver
-                .awaitCount(3);
-        testDependencyObserver = testDependencyObserver(bus);
-
-        // WHEN
         unit1.removeDependency(unit2ID);
         unit1.removeDependency(unit3ID);
         unit1.removeDependency(unit4ID);
-        testDependencyObserver
-                .awaitCount(3);
+        testComputationScheduler.triggerActions();
 
         // THEN
-        assertTracker(tracker);
+        assertLatestState(systemState().addUnits(
+                unit(unit1ID).withState(CREATED).withDesiredState(UNSET),
+                unit(unit2ID).withState(CREATED).withDesiredState(UNSET),
+                unit(unit3ID).withState(CREATED).withDesiredState(UNSET),
+                unit(unit4ID).withState(CREATED).withDesiredState(UNSET)
+        ).build());
     }
 
-    // 302aa0
     @Test
     public void testRemoveOneTransitiveDependency() throws Exception {
         // GIVEN
-        Bus bus = new LocalBus();
-        Tracker tracker = new Tracker(bus);
+        setupComputationTestScheduler();
         String unit1ID = "unit1";
         String unit2ID = "unit2";
         String unit3ID = "unit3";
+
+        // WHEN
         FakeUnit unit1 = new FakeUnit(unit1ID, bus);
         FakeUnit unit2 = new FakeUnit(unit2ID, bus);
         FakeUnit unit3 = new FakeUnit(unit3ID, bus);
-        testTransitionObserver = testTransitionObserver(bus);
         unit1.addDependency(unit2ID);
         unit2.addDependency(unit3ID);
-        testTransitionObserver
-                .awaitCount(2);
-        testDependencyObserver = testDependencyObserver(bus);
-
-        // WHEN
         unit2.removeDependency(unit3ID);
-        testDependencyObserver
-                .awaitCount(1);
+        testComputationScheduler.triggerActions();
 
         // THEN
-        assertTracker(tracker);
+        assertLatestState(systemState().addUnits(
+                unit(unit1ID).withState(CREATED).withDesiredState(UNSET).withDependencies(unit2ID),
+                unit(unit2ID).withState(CREATED).withDesiredState(UNSET),
+                unit(unit3ID).withState(CREATED).withDesiredState(UNSET)
+        ).build());
     }
 
-    // 0cc1e3
     @Test
     public void testRemoveMoreTransitiveDependencies() throws Exception {
         // GIVEN
-        Bus bus = new LocalBus();
-        Tracker tracker = new Tracker(bus);
+        setupComputationTestScheduler();
         String unit1ID = "unit1";
         String unit2ID = "unit2";
         String unit3ID = "unit3";
         String unit4ID = "unit4";
         String unit5ID = "unit5";
+
+        // WHEN
         FakeUnit unit1 = new FakeUnit(unit1ID, bus);
         FakeUnit unit2 = new FakeUnit(unit2ID, bus);
         FakeUnit unit3 = new FakeUnit(unit3ID, bus);
         FakeUnit unit4 = new FakeUnit(unit4ID, bus);
         FakeUnit unit5 = new FakeUnit(unit5ID, bus);
-        testTransitionObserver = testTransitionObserver(bus);
         unit1.addDependency(unit2ID);
         unit2.addDependency(unit3ID);
         unit2.addDependency(unit4ID);
         unit2.addDependency(unit5ID);
-        testTransitionObserver
-                .awaitCount(4);
-        testDependencyObserver = testDependencyObserver(bus);
-
-        // WHEN
         unit2.removeDependency(unit5ID);
         unit2.removeDependency(unit4ID);
-        unit2.removeDependency(unit3ID);
-        testDependencyObserver
-                .awaitCount(3);
+        testComputationScheduler.triggerActions();
 
         // THEN
-        assertTracker(tracker);
+        assertLatestState(systemState().addUnits(
+                unit(unit1ID).withState(CREATED).withDesiredState(UNSET).withDependencies(unit2ID),
+                unit(unit2ID).withState(CREATED).withDesiredState(UNSET).withDependencies(unit3ID),
+                unit(unit3ID).withState(CREATED).withDesiredState(UNSET),
+                unit(unit4ID).withState(CREATED).withDesiredState(UNSET),
+                unit(unit5ID).withState(CREATED).withDesiredState(UNSET)
+        ).build());
     }
 
-    // 998ebe
     @Test
     public void testRemoveTwoDepthTransitiveDependency() throws Exception {
         // GIVEN
-        Bus bus = new LocalBus();
-        Tracker tracker = new Tracker(bus);
+        setupComputationTestScheduler();
         String unit1ID = "unit1";
         String unit2ID = "unit2";
         String unit3ID = "unit3";
         String unit4ID = "unit4";
+
+        // WHEN
         FakeUnit unit1 = new FakeUnit(unit1ID, bus);
         FakeUnit unit2 = new FakeUnit(unit2ID, bus);
         FakeUnit unit3 = new FakeUnit(unit3ID, bus);
         FakeUnit unit4 = new FakeUnit(unit4ID, bus);
-        testTransitionObserver = testTransitionObserver(bus);
         unit1.addDependency(unit2ID);
         unit2.addDependency(unit3ID);
         unit3.addDependency(unit4ID);
-        testTransitionObserver
-                .awaitCount(3);
-        testDependencyObserver = testDependencyObserver(bus);
-
-        // WHEN
         unit3.removeDependency(unit4ID);
-        testDependencyObserver
-                .awaitCount(1);
+        testComputationScheduler.triggerActions();
 
         // THEN
-        assertTracker(tracker);
+        assertLatestState(systemState().addUnits(
+                unit(unit1ID).withState(CREATED).withDesiredState(UNSET).withDependencies(unit2ID),
+                unit(unit2ID).withState(CREATED).withDesiredState(UNSET).withDependencies(unit3ID),
+                unit(unit3ID).withState(CREATED).withDesiredState(UNSET),
+                unit(unit4ID).withState(CREATED).withDesiredState(UNSET)
+        ).build());
     }
 
-    // 3ba6ad
     @Test
     public void testRemoveMoreTwoDepthTransitiveDependencies() throws Exception {
         // GIVEN
-        Bus bus = new LocalBus();
-        Tracker tracker = new Tracker(bus);
+        setupComputationTestScheduler();
         String unit1ID = "unit1";
         String unit2ID = "unit2";
         String unit3ID = "unit3";
         String unit4ID = "unit4";
         String unit5ID = "unit5";
+
+        // WHEN
         FakeUnit unit1 = new FakeUnit(unit1ID, bus);
         FakeUnit unit2 = new FakeUnit(unit2ID, bus);
         FakeUnit unit3 = new FakeUnit(unit3ID, bus);
         FakeUnit unit4 = new FakeUnit(unit4ID, bus);
         FakeUnit unit5 = new FakeUnit(unit5ID, bus);
-        testTransitionObserver = testTransitionObserver(bus);
         unit1.addDependency(unit2ID);
         unit2.addDependency(unit3ID);
         unit3.addDependency(unit4ID);
         unit3.addDependency(unit5ID);
-        testTransitionObserver
-                .awaitCount(4);
-        testDependencyObserver = testDependencyObserver(bus);
-
-        // WHEN
-        unit3.removeDependency(unit5ID);
         unit3.removeDependency(unit4ID);
-        testDependencyObserver
-                .awaitCount(2);
+        unit3.removeDependency(unit5ID);
+        testComputationScheduler.triggerActions();
 
         // THEN
-        assertTracker(tracker);
+        assertLatestState(systemState().addUnits(
+                unit(unit1ID).withState(CREATED).withDesiredState(UNSET).withDependencies(unit2ID),
+                unit(unit2ID).withState(CREATED).withDesiredState(UNSET).withDependencies(unit3ID),
+                unit(unit3ID).withState(CREATED).withDesiredState(UNSET),
+                unit(unit4ID).withState(CREATED).withDesiredState(UNSET),
+                unit(unit5ID).withState(CREATED).withDesiredState(UNSET)
+        ).build());
     }
 
-    // b8288d
     @Test
     public void testRemoveDependenciesFromDifferentDependencyTrees() throws Exception {
         // GIVEN
-        Bus bus = new LocalBus();
-        Tracker tracker = new Tracker(bus);
-        String unit1aID = "unit1a";
-        String unit2aID = "unit2a";
-        String unit3aID = "unit3a";
-        String unit1bID = "unit1b";
-        String unit2bID = "unit2b";
-        String unit3bID = "unit3b";
-        FakeUnit unit1a = new FakeUnit(unit1aID, bus);
-        FakeUnit unit2a = new FakeUnit(unit2aID, bus);
-        FakeUnit unit3a = new FakeUnit(unit3aID, bus);
-        FakeUnit unit1b = new FakeUnit(unit1bID, bus);
-        FakeUnit unit2b = new FakeUnit(unit2bID, bus);
-        FakeUnit unit3b = new FakeUnit(unit3bID, bus);
-        testTransitionObserver = testTransitionObserver(bus);
-        unit1a.addDependency(unit2aID);
-        unit1a.addDependency(unit3aID);
-        unit1b.addDependency(unit2bID);
-        unit1b.addDependency(unit3bID);
-        testTransitionObserver
-                .awaitCount(4);
-        testDependencyObserver = testDependencyObserver(bus);
+        setupComputationTestScheduler();
+        String unitA1ID = "unitA1";
+        String unitA2ID = "unitA2";
+        String unitA3ID = "unitA3";
+        String unitB1ID = "unitB1";
+        String unitB2ID = "unitB2";
+        String unitB3ID = "unitB3";
 
         // WHEN
-        unit1a.removeDependency(unit2aID);
-        unit1a.removeDependency(unit3aID);
-        unit1b.removeDependency(unit2bID);
-        testDependencyObserver
-                .awaitCount(3);
+        FakeUnit unit1a = new FakeUnit(unitA1ID, bus);
+        FakeUnit unit2a = new FakeUnit(unitA2ID, bus);
+        FakeUnit unit3a = new FakeUnit(unitA3ID, bus);
+        FakeUnit unit1b = new FakeUnit(unitB1ID, bus);
+        FakeUnit unit2b = new FakeUnit(unitB2ID, bus);
+        FakeUnit unit3b = new FakeUnit(unitB3ID, bus);
+        unit1a.addDependency(unitA2ID);
+        unit1a.addDependency(unitA3ID);
+        unit1b.addDependency(unitB2ID);
+        unit1b.addDependency(unitB3ID);
+        unit1a.removeDependency(unitA2ID);
+        unit1a.removeDependency(unitA3ID);
+        unit1b.removeDependency(unitB2ID);
+        testComputationScheduler.triggerActions();
 
         // THEN
-        assertTracker(tracker);
+        assertLatestState(systemState().addUnits(
+                unit(unitA1ID).withState(CREATED).withDesiredState(UNSET),
+                unit(unitA2ID).withState(CREATED).withDesiredState(UNSET),
+                unit(unitA3ID).withState(CREATED).withDesiredState(UNSET),
+                unit(unitB1ID).withState(CREATED).withDesiredState(UNSET).withDependencies(unitB3ID),
+                unit(unitB2ID).withState(CREATED).withDesiredState(UNSET),
+                unit(unitB3ID).withState(CREATED).withDesiredState(UNSET)
+        ).build());
     }
 
-    @After
-    public void disposeTestObservers() {
-        if (testTransitionObserver != null && !testTransitionObserver.isDisposed()) {
-            testTransitionObserver.dispose();
-        }
-        if (testDependencyObserver != null && !testDependencyObserver.isDisposed()) {
-            testDependencyObserver.dispose();
-        }
-    }
-
-    // utility
-    private TestObserver<Message> testTransitionObserver(Bus bus) {
-        return bus.events()
-                .filter(it -> it.messageType().equals(Transition.class))
-                .test();
-    }
-
-    private TestObserver<Message> testDependencyObserver(Bus bus) {
-        return bus.events()
-                .filter(it -> it.messageType().equals(Dependencies.class))
-                .test();
-    }
-
-    private Message<Command> command(String targetUnitId, Command start) {
-        return message(Command.class)
-                .withTarget(targetUnitId)
-                .withPayload(start);
-    }
 }

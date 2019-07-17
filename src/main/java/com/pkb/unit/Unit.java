@@ -1,7 +1,12 @@
 package com.pkb.unit;
 
+import static com.pkb.unit.Command.DISABLE;
+import static com.pkb.unit.Command.ENABLE;
 import static com.pkb.unit.Command.START;
 import static com.pkb.unit.Command.STOP;
+import static com.pkb.unit.DesiredState.DISABLED;
+import static com.pkb.unit.DesiredState.ENABLED;
+import static com.pkb.unit.DesiredState.UNSET;
 import static com.pkb.unit.State.CREATED;
 import static com.pkb.unit.State.FAILED;
 import static com.pkb.unit.State.STARTED;
@@ -25,48 +30,53 @@ import com.pkb.unit.message.payload.ReportDependenciesRequest;
 import com.pkb.unit.message.payload.ReportStateRequest;
 import com.pkb.unit.message.payload.Transition;
 
+import io.reactivex.Observable;
 import io.reactivex.schedulers.Schedulers;
 import io.vavr.collection.List;
 
+/**
+ * A Unit is a base class for a restartable,
+ */
 public abstract class Unit {
-
+    /**
+     * id uniquely identifies a unit in the whole system.
+     */
     private final String id;
-    private State state;
-    private final Bus owner;
+
+    /**
+     * state represents the current state of the unit
+     */
+    private State state = CREATED;
+
+    /**
+     * desiredState indicates the desired state of the unit
+     * within the system. The unit will issue commands, retry from
+     * failure, etc in order to match the state to the desired state.
+     */
+    private DesiredState desiredState = UNSET;
+
+    /**
+     * bus is the communication channel for units to send & receive messages.
+     */
+    private final Bus bus;
 
     private final List<CommandHandler> commandHandlers = List.of(
             new StartHandler(),
-            new StopHandler()
+            new StopHandler(),
+            new EnableHandler(),
+            new DisableHandler()
     );
-
-
-    String id() {
-        return id;
-    }
-
-    State state() {
-        return state;
-    }
-
-    Bus owner() {
-        return owner;
-    }
 
     private Map<String, Optional<State>> mandatoryDependencies = new ConcurrentHashMap<>();
 
     public Unit(String id, Bus bus) {
         this.id = id;
-        this.state = CREATED;
-        this.owner = bus;
-        // Commands might result in IO bound operations, e.g.
-        // opening a database connection or connecting to an HTTP API.
-        // Use the io() scheduler for this reason
+        this.bus = bus;
+
         Filters.payloads(bus.events(), Command.class, id)
-                .observeOn(Schedulers.io())
+                .observeOn(Schedulers.computation())
                 .subscribe(this::handle);
 
-        // Handling transitions & reporting state should _not_ do any IO work.
-        // so we can execute these with the io() scheduler.
         Filters.payloads(bus.events(), Transition.class)
                 .observeOn(Schedulers.computation())
                 .subscribe(this::handleDependencyTransition);
@@ -79,12 +89,15 @@ public abstract class Unit {
                 .observeOn(Schedulers.computation())
                 .subscribe(ignored -> handleReportDependencies());
 
+        // Advertise our full current state
         unchecked(() -> bus.sink().accept(message(NewUnit.class).withPayload(newUnit(id))));
+        handleReportDependencies();
+        handleReportState();
     }
 
     private void handleReportDependencies() {
         unchecked(() ->
-            owner.sink().accept(message(Dependencies.class).withPayload(dependencies(id, mandatoryDependencies.keySet()))));
+            bus.sink().accept(message(Dependencies.class).withPayload(dependencies(id, mandatoryDependencies.keySet()))));
     }
 
     private void handleReportState() {
@@ -118,7 +131,7 @@ public abstract class Unit {
         handleReportDependencies();
 
         // Prompt the dependency to report it's state
-        unchecked(() -> owner.sink().accept(message(ReportStateRequest.class).withTarget(dependency)));
+        unchecked(() -> bus.sink().accept(message(ReportStateRequest.class).withTarget(dependency)));
 
         return ret;
     }
@@ -133,15 +146,13 @@ public abstract class Unit {
     }
 
     private synchronized void handle(Command command) {
-        State previous = state;
         try {
             commandHandlers
                     .find(ch -> ch.handles(command))
                     .getOrElseThrow(() -> new IllegalStateException("No handler found for command " + command))
                     .handle(command);
         } catch (Exception e) {
-            state = FAILED;
-            unchecked(() -> owner.sink().accept(makeTransitionEvent(previous, state, e.getMessage())));
+            setAndPublishState(FAILED, e.getMessage());
         }
     }
 
@@ -149,6 +160,38 @@ public abstract class Unit {
         boolean handles(Command c);
 
         void handle(Command c);
+    }
+
+    private class EnableHandler implements CommandHandler {
+        @Override
+        public boolean handles(Command c) {
+            return c == ENABLE;
+        }
+
+        @Override
+        public void handle(Command c) {
+            desiredState = ENABLED;
+
+            if (state != STARTED) {
+                sendCommand(id, START);
+            }
+        }
+    }
+
+    private class DisableHandler implements CommandHandler {
+        @Override
+        public boolean handles(Command c) {
+            return c == DISABLE;
+        }
+
+        @Override
+        public void handle(Command c) {
+            desiredState = DISABLED;
+
+            if (state != STOPPED) {
+                sendCommand(id, STOP);
+            }
+        }
     }
 
     private class StartHandler implements CommandHandler {
@@ -161,6 +204,11 @@ public abstract class Unit {
 
         @Override
         public void handle(Command c) {
+            if (desiredState == DISABLED) {
+                setAndPublishState(state, "Not starting, this unit is DISABLED");
+                return;
+            }
+
             if (state == STARTED) {
                 setAndPublishState(state, "Already STARTED. No operation executed");
                 return;
@@ -172,12 +220,15 @@ public abstract class Unit {
                 return;
             }
 
-            HandleOutcome outcome = handleStart();
-            if (outcome == HandleOutcome.SUCCESS) {
-                setAndPublishState(STARTED);
-            } else {
-                setAndPublishState(FAILED);
-            }
+            Observable.fromCallable(Unit.this::handleStart)
+                    .subscribeOn(Schedulers.io())
+                    .subscribe(outcome -> {
+                        if (outcome == HandleOutcome.SUCCESS) {
+                            setAndPublishState(STARTED);
+                        } else {
+                            setAndPublishState(FAILED);
+                        }
+                    });
         }
     }
 
@@ -195,22 +246,32 @@ public abstract class Unit {
                 return;
             }
             setAndPublishState(STOPPING);
-            HandleOutcome outcome = handleStop();
-            if (outcome == HandleOutcome.SUCCESS) {
-                setAndPublishState(STOPPED);
-            } else {
-                setAndPublishState(FAILED);
-            }
+            Observable.fromCallable(Unit.this::handleStop)
+                    .subscribeOn(Schedulers.io())
+                    .subscribe(outcome -> {
+                        if (outcome == HandleOutcome.SUCCESS) {
+                            setAndPublishState(STOPPED);
+                        } else {
+                            setAndPublishState(FAILED);
+                        }
+
+                        // Take action to return to the desired state.
+                        if (desiredState == ENABLED) {
+                            sendCommand(id, START);
+                        }
+                    });
         }
     }
 
-    private void setAndPublishState(State state) {
-        setAndPublishState(state, "");
+    private void setAndPublishState(State newState) {
+        setAndPublishState(newState, "");
     }
 
-    private void setAndPublishState(State state, String comment) {
-        unchecked(() -> this.owner.sink().accept(makeTransitionEvent(this.state, state, comment)));
-        this.state = state;
+    private void setAndPublishState(State newState, String comment) {
+        State previous = this.state;
+        this.state = newState;
+        unchecked(() -> this.bus.sink().accept(makeTransitionEvent(previous
+                , desiredState, comment)));
     }
 
     public enum HandleOutcome {
@@ -221,12 +282,17 @@ public abstract class Unit {
 
     abstract HandleOutcome handleStop();
 
-    private Message<Transition> makeTransitionEvent(State previous, State current, String comment) {
+
+    private Message<Transition> makeTransitionEvent(State previous, DesiredState previousDesired, String comment) {
         return message(Transition.class)
-                .withPayload(transition(current, previous, id, Optional.of(comment)));
+                .withPayload(transition(id, state, previous, desiredState, previousDesired, Optional.of(comment)));
     }
 
     private void sendCommand(String id, Command command) {
-        unchecked(() -> owner.sink().accept(message(Command.class).withTarget(id).withPayload(command)));
+        unchecked(() -> bus.sink().accept(message(Command.class).withTarget(id).withPayload(command)));
+    }
+
+    String id() {
+        return id;
     }
 }

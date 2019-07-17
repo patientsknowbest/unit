@@ -1,0 +1,14 @@
+digraph valid_transitions {
+    rankdir=LR
+    created -> starting;
+    starting -> started;
+    started -> stopping;
+    stopping -> stopped;
+    stopped -> starting;
+    created -> failed;
+    starting -> failed;
+    started -> failed;
+    stopping -> failed;
+    stopped -> failed;
+    failed -> starting;
+}

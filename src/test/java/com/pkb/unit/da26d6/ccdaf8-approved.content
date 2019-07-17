@@ -1,4 +1,0 @@
-/*com.pkb.unit.TransitionTests.whenSingleUnitAlreadyStartedThenStartDoesNothing*/
-digraph { 
-unit1 [label="unit1 STARTED"]
-}
