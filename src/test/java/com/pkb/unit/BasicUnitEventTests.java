@@ -7,8 +7,6 @@ import static com.pkb.unit.tracker.ImmutableUnit.unit;
 
 import org.junit.Test;
 
-import com.google.common.collect.ImmutableMap;
-
 public class BasicUnitEventTests extends AbstractUnitTest {
     @Test
     public void initialStateIsCreated() {
@@ -20,8 +18,7 @@ public class BasicUnitEventTests extends AbstractUnitTest {
         testScheduler.triggerActions();
 
         // THEN
-        assertLatestState(systemState(
-                ImmutableMap.of("unit1", unit("unit1").withState(CREATED).withDesiredState(UNSET))
-        ));
+        assertLatestState(systemState().addUnits(
+                unit("unit1").withState(CREATED).withDesiredState(UNSET)).build());
     }
 }

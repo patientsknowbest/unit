@@ -4,9 +4,11 @@ import static com.pkb.unit.Unchecked.unchecked;
 import static com.pkb.unit.message.ImmutableMessage.message;
 import static com.pkb.unit.tracker.ImmutableSystemState.systemState;
 import static com.pkb.unit.tracker.ImmutableUnit.unit;
-import static java.util.Collections.emptyMap;
+import static java.util.function.Function.identity;
+import static java.util.stream.Collectors.toMap;
 
-import java.util.HashMap;
+import java.util.Map;
+import java.util.TreeMap;
 
 import com.pkb.unit.Bus;
 import com.pkb.unit.message.payload.Dependencies;
@@ -30,7 +32,7 @@ public class Tracker {
         return bus.events().filter(msg -> msg.payload().isPresent())
                 .map(msg -> msg.payload().get())
                 // Build a model of the system state applying changes as they occur.
-                .scan(systemState(emptyMap()), Tracker::accumulate)
+                .scan(systemState().build(), Tracker::accumulate)
                 // Trigger at least one report of dependencies from each unit (allows the tracker to be added at
                 // any time)
                 .doOnSubscribe((disp) -> {
@@ -40,7 +42,8 @@ public class Tracker {
     }
 
     private static SystemState accumulate(SystemState initial, Object payload) {
-        HashMap<String, Unit> newUnits = new HashMap<>(initial.units());
+        Map<String, Unit> newUnits = initial.units().stream().collect(toMap(Unit::id, identity(), (a, b) -> a, TreeMap::new));
+
         if (payload instanceof Transition) {
             Transition transition = (Transition) payload;
             newUnits.compute(transition.unitId(), (id, unit) -> {
@@ -71,6 +74,6 @@ public class Tracker {
             newUnits.put(id, unit(id));
         }
 
-        return ImmutableSystemState.copyOf(initial).withUnits(newUnits);
+        return ImmutableSystemState.copyOf(initial).withUnits(newUnits.values());
     }
 }

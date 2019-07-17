@@ -13,7 +13,7 @@ import com.pkb.unit.tracker.Unit;
  */
 public class DOT {
     public static String toDOTFormat(SystemState systemState) {
-        return systemState.units().values().stream()
+        return systemState.units().stream()
                 .map(DOT::toDOTFormat)
                 .collect(joining("\n", "digraph { \n", "\n}"));
     }

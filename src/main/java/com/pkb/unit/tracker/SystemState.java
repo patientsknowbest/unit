@@ -1,11 +1,11 @@
 package com.pkb.unit.tracker;
 
-import java.util.Map;
+import java.util.List;
 
 import org.immutables.value.Value;
 
 @Value.Immutable
-@Value.Style(allParameters = true, of = "systemState")
+@Value.Style(builder = "systemState")
 public interface SystemState {
-    Map<String, Unit> units();
+    List<Unit> units();
 }

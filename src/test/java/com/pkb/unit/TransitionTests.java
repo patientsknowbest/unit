@@ -16,8 +16,6 @@ import org.junit.Test;
 
 import com.pkb.unit.message.Message;
 
-import com.google.common.collect.ImmutableMap;
-
 public class TransitionTests extends AbstractUnitTest {
     @Test
     public void enableCommandTransitionsSingleUnitToStarting() throws Exception {
@@ -29,9 +27,9 @@ public class TransitionTests extends AbstractUnitTest {
         testComputationScheduler.triggerActions();
 
         // THEN
-        assertLatestState(systemState(
-                ImmutableMap.of("unit1", unit("unit1").withState(STARTING).withDesiredState(ENABLED))
-        ));
+        assertLatestState(systemState()
+                .addUnits(unit("unit1").withState(STARTING).withDesiredState(ENABLED))
+            .build());
     }
 
     @Test
@@ -47,12 +45,9 @@ public class TransitionTests extends AbstractUnitTest {
         testComputationScheduler.triggerActions();
 
         // THEN
-        assertLatestState(systemState(
-                ImmutableMap.of(
-                        "unit1", unit("unit1").withState(STARTING).withDesiredState(ENABLED).withDependencies("unit2"),
-                        "unit2", unit("unit2").withState(STARTING).withDesiredState(UNSET)
-                )
-        ));
+        assertLatestState(systemState().addUnits(
+                unit("unit1").withState(STARTING).withDesiredState(ENABLED).withDependencies("unit2"),
+                unit("unit2").withState(STARTING).withDesiredState(UNSET)).build());
     }
 
     @Test
@@ -70,12 +65,9 @@ public class TransitionTests extends AbstractUnitTest {
         testScheduler.triggerActions();
 
         // THEN
-        assertLatestState(systemState(
-                ImmutableMap.of(
-                        "unit1", unit("unit1").withState(STARTED).withDesiredState(ENABLED).withDependencies("unit2"),
-                        "unit2", unit("unit2").withState(STARTED).withDesiredState(UNSET)
-                )
-        ));
+        assertLatestState(systemState().addUnits(
+                        unit("unit1").withState(STARTED).withDesiredState(ENABLED).withDependencies("unit2"),
+                        unit("unit2").withState(STARTED).withDesiredState(UNSET)).build());
     }
 
     @Test
@@ -91,17 +83,15 @@ public class TransitionTests extends AbstractUnitTest {
         testScheduler.triggerActions();
 
         // THEN
-        assertLatestState(systemState(ImmutableMap.of(
-                "unit1", unit("unit1").withState(STARTED).withDesiredState(UNSET)
-        )));
+        assertLatestState(systemState().addUnits(
+                unit("unit1").withState(STARTED).withDesiredState(UNSET)).build());
 
         // WHEN
         bus.sink().accept(command("unit1", START));
 
         // THEN
-        assertLatestState(systemState(ImmutableMap.of(
-                "unit1", unit("unit1").withState(STARTED).withDesiredState(UNSET)
-        )));
+        assertLatestState(systemState().addUnits(
+                unit("unit1").withState(STARTED).withDesiredState(UNSET)).build());
     }
 
     @Test
@@ -119,20 +109,18 @@ public class TransitionTests extends AbstractUnitTest {
         testScheduler.triggerActions();
 
         // THEN
-        assertLatestState(systemState(ImmutableMap.of(
-                "unit1", unit("unit1").withDesiredState(UNSET).withState(STARTED).withDependencies("unit2"),
-                "unit2", unit("unit2").withDesiredState(UNSET).withState(STARTED)
-        )));
+        assertLatestState(systemState().addUnits(
+                unit("unit1").withDesiredState(UNSET).withState(STARTED).withDependencies("unit2"),
+                unit("unit2").withDesiredState(UNSET).withState(STARTED)).build());
 
         // WHEN
         bus.sink().accept(command("unit2", START));
         testScheduler.triggerActions();
 
         // THEN
-        assertLatestState(systemState(ImmutableMap.of(
-                "unit1", unit("unit1").withDesiredState(UNSET).withState(STARTED).withDependencies("unit2"),
-                "unit2", unit("unit2").withDesiredState(UNSET).withState(STARTED)
-        )));
+        assertLatestState(systemState().addUnits(
+                unit("unit1").withDesiredState(UNSET).withState(STARTED).withDependencies("unit2"),
+                unit("unit2").withDesiredState(UNSET).withState(STARTED)).build());
     }
 
     // ceb5f8
@@ -148,9 +136,8 @@ public class TransitionTests extends AbstractUnitTest {
         testScheduler.triggerActions();
 
         // THEN
-        assertLatestState(systemState(ImmutableMap.of(
-                "unit1", unit("unit1").withState(STARTED).withDesiredState(UNSET)
-        )));
+        assertLatestState(systemState().addUnits(
+                unit("unit1").withState(STARTED).withDesiredState(UNSET)).build());
 
         // WHEN
         bus.sink().accept(command("unit1", STOP));
@@ -158,21 +145,18 @@ public class TransitionTests extends AbstractUnitTest {
         testScheduler.triggerActions();
 
         // THEN
-        assertLatestState(systemState(ImmutableMap.of(
-                "unit1", unit("unit1").withState(STOPPED).withDesiredState(UNSET)
-        )));
+        assertLatestState(systemState().addUnits(
+                unit("unit1").withState(STOPPED).withDesiredState(UNSET)).build());
 
         // WHEN
         bus.sink().accept(command("unit1", STOP));
         testScheduler.triggerActions();
 
         // THEN
-        assertLatestState(systemState(ImmutableMap.of(
-                "unit1", unit("unit1").withState(STOPPED).withDesiredState(UNSET)
-        )));
+        assertLatestState(systemState().addUnits(
+                unit("unit1").withState(STOPPED).withDesiredState(UNSET)).build());
     }
 
-    // fe5fbb
     @Test
     public void whenDependencyAlreadyStoppedThenStopDoesNothing() throws Exception {
         // GIVEN
@@ -189,10 +173,9 @@ public class TransitionTests extends AbstractUnitTest {
         testScheduler.triggerActions();
 
         // THEN
-        assertLatestState(systemState(ImmutableMap.of(
-                "unit1", unit("unit1").withDesiredState(UNSET).withState(STARTED).withDependencies("unit2"),
-                "unit2", unit("unit2").withDesiredState(UNSET).withState(STARTED)
-        )));
+        assertLatestState(systemState().addUnits(
+                unit("unit1").withDesiredState(UNSET).withState(STARTED).withDependencies("unit2"),
+                unit("unit2").withDesiredState(UNSET).withState(STARTED)).build());
 
         // WHEN
         bus.sink().accept(command("unit2", STOP));
@@ -201,20 +184,18 @@ public class TransitionTests extends AbstractUnitTest {
         testScheduler.triggerActions();
 
         // THEN
-        assertLatestState(systemState(ImmutableMap.of(
-                "unit1", unit("unit1").withDesiredState(UNSET).withState(STOPPED).withDependencies("unit2"),
-                "unit2", unit("unit2").withDesiredState(UNSET).withState(STOPPED)
-        )));
+        assertLatestState(systemState().addUnits(
+                unit("unit1").withDesiredState(UNSET).withState(STOPPED).withDependencies("unit2"),
+                unit("unit2").withDesiredState(UNSET).withState(STOPPED)).build());
 
         // WHEN
         bus.sink().accept(command("unit2", STOP));
         testScheduler.triggerActions();
 
         // THEN
-        assertLatestState(systemState(ImmutableMap.of(
-                "unit1", unit("unit1").withDesiredState(UNSET).withState(STOPPED).withDependencies("unit2"),
-                "unit2", unit("unit2").withDesiredState(UNSET).withState(STOPPED)
-        )));
+        assertLatestState(systemState().addUnits(
+                unit("unit1").withDesiredState(UNSET).withState(STOPPED).withDependencies("unit2"),
+                unit("unit2").withDesiredState(UNSET).withState(STOPPED)).build());
     }
 
     private Message<Command> command(String target, Command start) {
