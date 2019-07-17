@@ -69,4 +69,12 @@ class FakeUnit extends Unit {
         shouldFailStop = true;
         cdlCompleteStop.countDown();
     }
+
+    /**
+     * Increase the visibility of this to public for testing.
+     */
+    @Override
+    public void failed() {
+        super.failed();
+    }
 }
