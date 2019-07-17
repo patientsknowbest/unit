@@ -21,7 +21,7 @@ public class BasicUnitEventTests extends AbstractUnitTest {
         ImmutableSystemState expected = systemState(
                 ImmutableMap.of("unit1", unit("unit1").withState(CREATED).withDesiredState(UNSET))
         );
-        TestObserver<SystemState> testObserver = testObserver(expected);
+        TestObserver<SystemState> testObserver = testObserver();
 
         // WHEN
         new FakeUnit("unit1", bus);

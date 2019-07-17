@@ -33,7 +33,7 @@ public class TransitionTests extends AbstractUnitTest {
         SystemState expected = systemState(
                 ImmutableMap.of("unit1", unit("unit1").withState(STARTING).withDesiredState(ENABLED))
         );
-        TestObserver<SystemState> testObserver = testObserver(expected);
+        TestObserver<SystemState> testObserver = testObserver();
 
         // WHEN
         new FakeUnit("unit1", bus);
@@ -54,7 +54,7 @@ public class TransitionTests extends AbstractUnitTest {
                         "unit2", unit("unit2").withState(STARTING).withDesiredState(UNSET)
                 )
         );
-        TestObserver<SystemState> testObserver = testObserver(expected);
+        TestObserver<SystemState> testObserver = testObserver();
 
         // WHEN
         FakeUnit unit1 = new FakeUnit("unit1", bus);
@@ -76,7 +76,7 @@ public class TransitionTests extends AbstractUnitTest {
                         "unit2", unit("unit2").withState(STARTED).withDesiredState(UNSET)
                 )
         );
-        TestObserver<SystemState> testObserver = testObserver(expected);
+        TestObserver<SystemState> testObserver = testObserver();
 
         // WHEN
         FakeUnit unit1 = new FakeUnit("unit1", bus);

@@ -1,5 +1,7 @@
 package com.pkb.unit;
 
+import static com.github.karsaig.approvalcrest.MatcherAssert.assertThat;
+import static com.github.karsaig.approvalcrest.matcher.Matchers.sameBeanAs;
 import static com.pkb.unit.tracker.Tracker.track;
 import static java.util.stream.Collectors.joining;
 
@@ -55,16 +57,14 @@ public class AbstractUnitTest {
         }
     };
 
-    protected TestObserver<SystemState> testObserver(SystemState expected) {
+    protected TestObserver<SystemState> testObserver() {
         return track(bus)
-                .filter(state -> state.equals(expected))
                 .test();
     }
 
     protected void assertExpectedState(TestObserver<SystemState> testObserver, SystemState expected) {
-
-        testObserver.awaitCount(1);
-        testObserver.assertValue(expected);
+        List<SystemState> values = testObserver.values();
+        assertThat(values.get(values.size() - 1), sameBeanAs(expected));
     }
 
     protected void setupTestScheduler() {
