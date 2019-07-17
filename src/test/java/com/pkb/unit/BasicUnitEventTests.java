@@ -7,26 +7,21 @@ import static com.pkb.unit.tracker.ImmutableUnit.unit;
 
 import org.junit.Test;
 
-import com.pkb.unit.tracker.ImmutableSystemState;
-import com.pkb.unit.tracker.SystemState;
-
 import com.google.common.collect.ImmutableMap;
-
-import io.reactivex.observers.TestObserver;
 
 public class BasicUnitEventTests extends AbstractUnitTest {
     @Test
     public void initialStateIsCreated() {
         // GIVEN
-        ImmutableSystemState expected = systemState(
-                ImmutableMap.of("unit1", unit("unit1").withState(CREATED).withDesiredState(UNSET))
-        );
-        TestObserver<SystemState> testObserver = testObserver();
+        setupComputationAndIOTestScheduler();
 
         // WHEN
         new FakeUnit("unit1", bus);
+        testScheduler.triggerActions();
 
         // THEN
-        assertExpectedState(testObserver, expected);
+        assertLatestState(systemState(
+                ImmutableMap.of("unit1", unit("unit1").withState(CREATED).withDesiredState(UNSET))
+        ));
     }
 }

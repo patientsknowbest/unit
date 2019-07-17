@@ -2,7 +2,6 @@ package com.pkb.unit;
 
 import static com.github.karsaig.approvalcrest.MatcherAssert.assertThat;
 import static com.github.karsaig.approvalcrest.matcher.Matchers.sameBeanAs;
-import static com.pkb.unit.tracker.Tracker.track;
 import static java.util.stream.Collectors.joining;
 
 import java.util.ArrayList;
@@ -19,12 +18,12 @@ import com.pkb.unit.tracker.SystemState;
 import com.pkb.unit.tracker.Tracker;
 
 import io.reactivex.disposables.Disposable;
-import io.reactivex.observers.TestObserver;
 import io.reactivex.plugins.RxJavaPlugins;
 import io.reactivex.schedulers.TestScheduler;
 
 public class AbstractUnitTest {
     protected Bus bus;
+
     protected TestScheduler testScheduler;
 
     protected TestScheduler testComputationScheduler;
@@ -57,17 +56,12 @@ public class AbstractUnitTest {
         }
     };
 
-    protected TestObserver<SystemState> testObserver() {
-        return track(bus)
-                .test();
+    protected void assertLatestState(SystemState expected) {
+        SystemState latestState = systemStateHistory.get(systemStateHistory.size() - 1);
+        assertThat(latestState, sameBeanAs(expected));
     }
 
-    protected void assertExpectedState(TestObserver<SystemState> testObserver, SystemState expected) {
-        List<SystemState> values = testObserver.values();
-        assertThat(values.get(values.size() - 1), sameBeanAs(expected));
-    }
-
-    protected void setupTestScheduler() {
+    protected void setupComputationAndIOTestScheduler() {
         testScheduler = new TestScheduler();
         RxJavaPlugins.setComputationSchedulerHandler(i -> testScheduler);
         RxJavaPlugins.setIoSchedulerHandler(i -> testScheduler);
