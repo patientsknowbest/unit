@@ -123,7 +123,6 @@ public class TransitionTests extends AbstractUnitTest {
                 unit("unit2").withDesiredState(UNSET).withState(STARTED)).build());
     }
 
-    // ceb5f8
     @Test
     public void whenSingleUnitAlreadyStoppedThenStopDoesNothing() throws Exception {
         // GIVEN

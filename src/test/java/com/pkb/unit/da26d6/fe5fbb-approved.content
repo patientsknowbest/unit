@@ -1,6 +1,0 @@
-/*com.pkb.unit.TransitionTests.whenDependencyAlreadyStoppedThenStopDoesNothing*/
-digraph { 
-unit1 [label="unit1 STOPPED"]
-unit1 -> unit2
-unit2 [label="unit2 STOPPED"]
-}
