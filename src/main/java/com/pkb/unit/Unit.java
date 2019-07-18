@@ -129,7 +129,7 @@ public abstract class Unit {
     }
 
     private void handleReportState() {
-        setAndPublishState(state);
+        publishState();
     }
 
     private void handleDependencyTransition(Transition transition) {
@@ -180,7 +180,7 @@ public abstract class Unit {
                     .getOrElseThrow(() -> new IllegalStateException("No handler found for command " + command))
                     .handle(command);
         } catch (Exception e) {
-            setAndPublishState(FAILED, e.getMessage());
+            publishState(e.getMessage());
         }
     }
 
@@ -227,20 +227,25 @@ public abstract class Unit {
         @Override
         public boolean handles(Command c) {
             // only start if current state is stopped
-            return c == START && (state == State.STOPPED || state == CREATED || state == STARTING || state == STARTED || state == FAILED);
+            return c == START;
         }
 
         @Override
         public void handle(Command c) {
             if (desiredState == DISABLED) {
-                setAndPublishState(state, "Not starting, this unit is DISABLED");
+                publishState("Not starting, this unit is DISABLED");
                 return;
             }
 
             if (state == STARTED) {
-                setAndPublishState(state, "Already STARTED. No operation executed");
+                publishState("Already STARTED. No operation executed");
                 return;
             }
+
+            if (state == STOPPING) {
+                publishState("Stopping in progress, cannot be started");
+            }
+
             setAndPublishState(STARTING);
             if (!allDepsHaveStarted()) {
                 // this could be better
@@ -264,18 +269,23 @@ public abstract class Unit {
 
         @Override
         public boolean handles(Command c) {
-            return c == STOP && (state == State.STARTED || state == FAILED || state == STOPPING || state == STARTING || state == STOPPED || state == CREATED);
+            return c == STOP;
         }
 
         @Override
         public void handle(Command c) {
             if (state == STOPPED) {
-                setAndPublishState(state, "Already STOPPED. No operation executed.");
+                publishState("Already STOPPED. No operation executed.");
                 return;
             }
 
             if (state == CREATED) {
                 setAndPublishState(STOPPED, "Never started.");
+                return;
+            }
+
+            if (state == STARTING) {
+                publishState("Starting in progress, cannot be STOPPED");
                 return;
             }
 
@@ -304,7 +314,23 @@ public abstract class Unit {
     private void setAndPublishState(State newState, String comment) {
         State previous = this.state;
         this.state = newState;
-        unchecked(() -> this.bus.sink().accept(makeTransitionEvent(previous, desiredState, comment)));
+        publishState(previous, desiredState, comment);
+    }
+
+    private void publishState() {
+        publishState("");
+    }
+
+    private void publishState(String comment) {
+        publishState(state, desiredState, "");
+    }
+
+    private void publishState(State previous, DesiredState previousDesired) {
+        publishState(previous, previousDesired, "");
+    }
+
+    private void publishState(State previous, DesiredState previousDesired, String comment) {
+        unchecked(() -> this.bus.sink().accept(makeTransitionEvent(previous, previousDesired, comment)));
     }
 
     public enum HandleOutcome {
@@ -345,9 +371,9 @@ public abstract class Unit {
 
         @Override
         public void handle(Command c) {
-            DesiredState previous = desiredState;
+            DesiredState previousDesired = desiredState;
             desiredState = UNSET;
-            unchecked(() -> bus.sink().accept(makeTransitionEvent(state, previous, "")));
+            publishState(state, previousDesired);
         }
     }
 }
