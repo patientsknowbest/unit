@@ -210,7 +210,9 @@ public abstract class Unit {
 
         @Override
         public void handle(Command c) {
+            DesiredState previousDesired = desiredState;
             desiredState = DISABLED;
+            publishState(state, previousDesired);
 
             if (state != STOPPED) {
                 sendCommand(id, STOP);
