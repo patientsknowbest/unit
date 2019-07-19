@@ -8,6 +8,7 @@ import static com.pkb.unit.DesiredState.UNSET;
 import static com.pkb.unit.State.STARTED;
 import static com.pkb.unit.State.STARTING;
 import static com.pkb.unit.State.STOPPED;
+import static com.pkb.unit.State.STOPPING;
 import static com.pkb.unit.tracker.ImmutableSystemState.systemState;
 import static com.pkb.unit.tracker.ImmutableUnit.unit;
 
@@ -26,7 +27,7 @@ public class TransitionTests extends AbstractUnitTest {
         // THEN
         assertLatestState(systemState()
                 .addUnits(unit("unit1").withState(STARTING).withDesiredState(ENABLED))
-            .build());
+                .build());
     }
 
     @Test
@@ -63,8 +64,8 @@ public class TransitionTests extends AbstractUnitTest {
 
         // THEN
         assertLatestState(systemState().addUnits(
-                        unit("unit1").withState(STARTED).withDesiredState(ENABLED).withDependencies("unit2"),
-                        unit("unit2").withState(STARTED).withDesiredState(UNSET)).build());
+                unit("unit1").withState(STARTED).withDesiredState(ENABLED).withDependencies("unit2"),
+                unit("unit2").withState(STARTED).withDesiredState(UNSET)).build());
     }
 
     @Test
@@ -192,5 +193,62 @@ public class TransitionTests extends AbstractUnitTest {
         assertLatestState(systemState().addUnits(
                 unit("unit1").withDesiredState(UNSET).withState(STOPPED).withDependencies("unit2"),
                 unit("unit2").withDesiredState(UNSET).withState(STOPPED)).build());
+    }
+
+    @Test
+    public void whenSingleUnitStartingThenStopDoesNothing() throws Exception {
+        // GIVEN
+        setupComputationTestScheduler();
+
+        // WHEN
+        FakeUnit unit1 = new FakeUnit("unit1", bus);
+        bus.sink().accept(command("unit1", START));
+        testComputationScheduler.triggerActions();
+
+        // THEN
+        assertLatestState(systemState().addUnits(
+                unit("unit1").withState(STARTING).withDesiredState(UNSET)).build());
+
+        // WHEN
+        bus.sink().accept(command("unit1", STOP));
+        testComputationScheduler.triggerActions();
+
+        // THEN
+        assertLatestState(systemState().addUnits(
+                unit("unit1").withState(STARTING).withDesiredState(UNSET)).build());
+    }
+
+    @Test
+    public void whenSingleUnitStoppingThenStartDoesNothing() throws Exception {
+        // GIVEN
+        setupComputationTestScheduler();
+        setupIOTestScheduler();
+
+        // WHEN
+        FakeUnit unit1 = new FakeUnit("unit1", bus);
+        bus.sink().accept(command("unit1", START));
+        unit1.completeStart();
+        testComputationScheduler.triggerActions();
+        testIOScheduler.triggerActions();
+
+        // THEN
+        assertLatestState(systemState().addUnits(
+                unit("unit1").withState(STARTED).withDesiredState(UNSET)).build());
+
+        // WHEN
+        bus.sink().accept(command("unit1", STOP));
+        testComputationScheduler.triggerActions();
+
+        // THEN
+        assertLatestState(systemState().addUnits(
+                unit("unit1").withState(STOPPING).withDesiredState(UNSET)).build());
+
+        // WHEN
+        bus.sink().accept(command("unit1", START));
+        testComputationScheduler.triggerActions();
+
+        // THEN
+        assertLatestState(systemState().addUnits(
+                unit("unit1").withState(STOPPING).withDesiredState(UNSET)).build());
     }
 }
