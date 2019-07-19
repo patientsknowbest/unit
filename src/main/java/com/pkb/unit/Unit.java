@@ -79,7 +79,7 @@ public abstract class Unit {
             new StopHandler(),
             new EnableHandler(),
             new DisableHandler(),
-            new ClearDesiredState()
+            new ClearDesiredStateHandler()
     );
 
     private Map<String, Optional<State>> mandatoryDependencies = new ConcurrentHashMap<>();
@@ -337,7 +337,7 @@ public abstract class Unit {
         return id;
     }
 
-    private class ClearDesiredState implements CommandHandler {
+    private class ClearDesiredStateHandler implements CommandHandler {
         @Override
         public boolean handles(Command c) {
             return c == CLEAR_DESIRED_STATE;
