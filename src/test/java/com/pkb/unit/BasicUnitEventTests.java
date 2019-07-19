@@ -1,7 +1,7 @@
 package com.pkb.unit;
 
 import static com.pkb.unit.DesiredState.UNSET;
-import static com.pkb.unit.State.CREATED;
+import static com.pkb.unit.State.STOPPED;
 import static com.pkb.unit.tracker.ImmutableSystemState.systemState;
 import static com.pkb.unit.tracker.ImmutableUnit.unit;
 
@@ -9,7 +9,7 @@ import org.junit.Test;
 
 public class BasicUnitEventTests extends AbstractUnitTest {
     @Test
-    public void initialStateIsCreated() {
+    public void initialStateIsStopped() {
         // GIVEN
         setupComputationAndIOTestScheduler();
 
@@ -19,6 +19,6 @@ public class BasicUnitEventTests extends AbstractUnitTest {
 
         // THEN
         assertLatestState(systemState().addUnits(
-                unit("unit1").withState(CREATED).withDesiredState(UNSET)).build());
+                unit("unit1").withState(STOPPED).withDesiredState(UNSET)).build());
     }
 }
