@@ -118,7 +118,7 @@ public abstract class Unit {
     private void handleRetry(Long ignored) {
         if (desiredState == ENABLED && state != STARTED) {
             sendCommand(id, START);
-        } else if (desiredState == DISABLED && state != STOPPED) {
+        } else if (desiredState == DISABLED && state != STOPPED && state != FAILED) {
             sendCommand(id, STOP);
         }
     }
@@ -276,6 +276,11 @@ public abstract class Unit {
 
             if (state == CREATED) {
                 setAndPublishState(STOPPED, "Never started.");
+                return;
+            }
+
+            if (state == FAILED) {
+                setAndPublishState(state, "FAILED unit cannot be stopped.");
                 return;
             }
 

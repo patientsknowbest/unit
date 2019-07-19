@@ -4,6 +4,7 @@ import static com.pkb.unit.Command.CLEAR_DESIRED_STATE;
 import static com.pkb.unit.Command.DISABLE;
 import static com.pkb.unit.Command.ENABLE;
 import static com.pkb.unit.Command.START;
+import static com.pkb.unit.Command.STOP;
 import static com.pkb.unit.DesiredState.DISABLED;
 import static com.pkb.unit.DesiredState.ENABLED;
 import static com.pkb.unit.DesiredState.UNSET;
@@ -193,6 +194,58 @@ public class RetryTests extends AbstractUnitTest {
         // THEN
         assertLatestState(systemState().addUnits(
                 unit("unit1").withDesiredState(ENABLED).withState(STARTED)
+        ).build());
+    }
+
+    @Test
+    public void failedUnitWontStop() throws Exception {
+        // GIVEN
+        setupComputationAndIOTestScheduler();
+
+        // WHEN
+        FakeUnit fakeUnit = new FakeUnit("unit1", bus);
+        bus.sink().accept(command("unit1", START));
+        fakeUnit.failStart();
+        testScheduler.triggerActions();
+
+        // THEN
+        assertLatestState(systemState().addUnits(
+                unit("unit1").withDesiredState(UNSET).withState(FAILED)
+        ).build());
+
+        // WHEN
+        bus.sink().accept(command("unit1", STOP));
+        testScheduler.triggerActions();
+
+        // THEN
+        assertLatestState(systemState().addUnits(
+                unit("unit1").withDesiredState(UNSET).withState(FAILED)
+        ).build());
+    }
+
+    @Test
+    public void failedUnitWontRetryStop() throws Exception {
+        // GIVEN
+        setupComputationTestScheduler();
+
+        // WHEN
+        FakeUnit fakeUnit = new FakeUnit("unit1", bus);
+        fakeUnit.failed();
+        bus.sink().accept(command("unit1", DISABLE));
+        testComputationScheduler.triggerActions();
+
+        // THEN
+        assertLatestState(systemState().addUnits(
+                unit("unit1").withDesiredState(DISABLED).withState(FAILED)
+        ).build());
+
+        // WHEN
+        testComputationScheduler.advanceTimeBy(FakeUnit.RETRY_PERIOD + 1, FakeUnit.RETRY_PERIOD_UNIT);
+        testComputationScheduler.triggerActions();
+
+        // THEN
+        assertLatestState(systemState().addUnits(
+                unit("unit1").withDesiredState(DISABLED).withState(FAILED)
         ).build());
     }
 }
