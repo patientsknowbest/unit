@@ -174,14 +174,11 @@ public abstract class Unit {
     }
 
     private synchronized void handle(Command command) {
-        try {
-            commandHandlers
-                    .find(ch -> ch.handles(command))
-                    .getOrElseThrow(() -> new IllegalStateException("No handler found for command " + command))
-                    .handle(command);
-        } catch (Exception e) {
-            publishState(e.getMessage());
-        }
+        commandHandlers
+                .find(ch -> ch.handles(command))
+                .peek(commandHandler -> commandHandler.handle(command))
+                .onEmpty(() -> publishState("No handler found for command " + command));
+
     }
 
     private interface CommandHandler {
@@ -323,7 +320,7 @@ public abstract class Unit {
     }
 
     private void publishState(String comment) {
-        publishState(state, desiredState, "");
+        publishState(state, desiredState, comment);
     }
 
     private void publishState(State previous, DesiredState previousDesired) {
