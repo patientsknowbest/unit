@@ -8,7 +8,6 @@ import static com.pkb.unit.Command.STOP;
 import static com.pkb.unit.DesiredState.DISABLED;
 import static com.pkb.unit.DesiredState.ENABLED;
 import static com.pkb.unit.DesiredState.UNSET;
-import static com.pkb.unit.State.CREATED;
 import static com.pkb.unit.State.FAILED;
 import static com.pkb.unit.State.STARTED;
 import static com.pkb.unit.State.STARTING;
@@ -48,7 +47,7 @@ public abstract class Unit {
     /**
      * state represents the current state of the unit
      */
-    private State state = CREATED;
+    private State state = STOPPED;
 
     /**
      * desiredState indicates the desired state of the unit
@@ -227,7 +226,7 @@ public abstract class Unit {
         @Override
         public boolean handles(Command c) {
             // only start if current state is stopped
-            return c == START && (state == State.STOPPED || state == CREATED || state == STARTING || state == STARTED || state == FAILED);
+            return c == START && (state == State.STOPPED || state == STARTING || state == STARTED || state == FAILED);
         }
 
         @Override
@@ -264,18 +263,13 @@ public abstract class Unit {
 
         @Override
         public boolean handles(Command c) {
-            return c == STOP && (state == State.STARTED || state == FAILED || state == STOPPING || state == STARTING || state == STOPPED || state == CREATED);
+            return c == STOP && (state == State.STARTED || state == FAILED || state == STOPPING || state == STARTING || state == STOPPED);
         }
 
         @Override
         public void handle(Command c) {
             if (state == STOPPED) {
                 setAndPublishState(state, "Already STOPPED. No operation executed.");
-                return;
-            }
-
-            if (state == CREATED) {
-                setAndPublishState(STOPPED, "Never started.");
                 return;
             }
 

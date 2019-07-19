@@ -1,7 +1,7 @@
 package com.pkb.unit;
 
 import static com.pkb.unit.DesiredState.UNSET;
-import static com.pkb.unit.State.CREATED;
+import static com.pkb.unit.State.STOPPED;
 import static com.pkb.unit.tracker.ImmutableSystemState.systemState;
 import static com.pkb.unit.tracker.ImmutableUnit.unit;
 
@@ -24,8 +24,8 @@ public class DependencyTests extends AbstractUnitTest {
 
         // THEN
         assertLatestState(systemState().addUnits(
-                unit(unit1ID).withState(CREATED).withDesiredState(UNSET).withDependencies(unit2ID),
-                unit(unit2ID).withState(CREATED).withDesiredState(UNSET)
+                unit(unit1ID).withState(STOPPED).withDesiredState(UNSET).withDependencies(unit2ID),
+                unit(unit2ID).withState(STOPPED).withDesiredState(UNSET)
         ).build());
     }
 
@@ -50,10 +50,10 @@ public class DependencyTests extends AbstractUnitTest {
 
         // THEN
         assertLatestState(systemState().addUnits(
-                unit(unit1ID).withState(CREATED).withDesiredState(UNSET).withDependencies(unit2ID, unit3ID, unit4ID),
-                unit(unit2ID).withState(CREATED).withDesiredState(UNSET),
-                unit(unit3ID).withState(CREATED).withDesiredState(UNSET),
-                unit(unit4ID).withState(CREATED).withDesiredState(UNSET)
+                unit(unit1ID).withState(STOPPED).withDesiredState(UNSET).withDependencies(unit2ID, unit3ID, unit4ID),
+                unit(unit2ID).withState(STOPPED).withDesiredState(UNSET),
+                unit(unit3ID).withState(STOPPED).withDesiredState(UNSET),
+                unit(unit4ID).withState(STOPPED).withDesiredState(UNSET)
         ).build());
     }
 
@@ -75,9 +75,9 @@ public class DependencyTests extends AbstractUnitTest {
 
         // THEN
         assertLatestState(systemState().addUnits(
-                unit(unit1ID).withState(CREATED).withDesiredState(UNSET).withDependencies(unit2ID),
-                unit(unit2ID).withState(CREATED).withDesiredState(UNSET).withDependencies(unit3ID),
-                unit(unit3ID).withState(CREATED).withDesiredState(UNSET)
+                unit(unit1ID).withState(STOPPED).withDesiredState(UNSET).withDependencies(unit2ID),
+                unit(unit2ID).withState(STOPPED).withDesiredState(UNSET).withDependencies(unit3ID),
+                unit(unit3ID).withState(STOPPED).withDesiredState(UNSET)
         ).build());
     }
 
@@ -105,11 +105,11 @@ public class DependencyTests extends AbstractUnitTest {
 
         // THEN
         assertLatestState(systemState().addUnits(
-                unit(unit1ID).withState(CREATED).withDesiredState(UNSET).withDependencies(unit2ID),
-                unit(unit2ID).withState(CREATED).withDesiredState(UNSET).withDependencies(unit3ID, unit4ID, unit5ID),
-                unit(unit3ID).withState(CREATED).withDesiredState(UNSET),
-                unit(unit4ID).withState(CREATED).withDesiredState(UNSET),
-                unit(unit5ID).withState(CREATED).withDesiredState(UNSET)
+                unit(unit1ID).withState(STOPPED).withDesiredState(UNSET).withDependencies(unit2ID),
+                unit(unit2ID).withState(STOPPED).withDesiredState(UNSET).withDependencies(unit3ID, unit4ID, unit5ID),
+                unit(unit3ID).withState(STOPPED).withDesiredState(UNSET),
+                unit(unit4ID).withState(STOPPED).withDesiredState(UNSET),
+                unit(unit5ID).withState(STOPPED).withDesiredState(UNSET)
         ).build());
     }
 
@@ -134,10 +134,10 @@ public class DependencyTests extends AbstractUnitTest {
 
         // THEN
         assertLatestState(systemState().addUnits(
-                unit(unit1ID).withState(CREATED).withDesiredState(UNSET).withDependencies(unit2ID),
-                unit(unit2ID).withState(CREATED).withDesiredState(UNSET).withDependencies(unit3ID),
-                unit(unit3ID).withState(CREATED).withDesiredState(UNSET).withDependencies(unit4ID),
-                unit(unit4ID).withState(CREATED).withDesiredState(UNSET)
+                unit(unit1ID).withState(STOPPED).withDesiredState(UNSET).withDependencies(unit2ID),
+                unit(unit2ID).withState(STOPPED).withDesiredState(UNSET).withDependencies(unit3ID),
+                unit(unit3ID).withState(STOPPED).withDesiredState(UNSET).withDependencies(unit4ID),
+                unit(unit4ID).withState(STOPPED).withDesiredState(UNSET)
         ).build());
     }
 
@@ -165,11 +165,11 @@ public class DependencyTests extends AbstractUnitTest {
 
         // THEN
         assertLatestState(systemState().addUnits(
-                unit(unit1ID).withState(CREATED).withDesiredState(UNSET).withDependencies(unit2ID),
-                unit(unit2ID).withState(CREATED).withDesiredState(UNSET).withDependencies(unit3ID),
-                unit(unit3ID).withState(CREATED).withDesiredState(UNSET).withDependencies(unit4ID, unit5ID),
-                unit(unit4ID).withState(CREATED).withDesiredState(UNSET),
-                unit(unit5ID).withState(CREATED).withDesiredState(UNSET)
+                unit(unit1ID).withState(STOPPED).withDesiredState(UNSET).withDependencies(unit2ID),
+                unit(unit2ID).withState(STOPPED).withDesiredState(UNSET).withDependencies(unit3ID),
+                unit(unit3ID).withState(STOPPED).withDesiredState(UNSET).withDependencies(unit4ID, unit5ID),
+                unit(unit4ID).withState(STOPPED).withDesiredState(UNSET),
+                unit(unit5ID).withState(STOPPED).withDesiredState(UNSET)
         ).build());
     }
 
@@ -199,12 +199,12 @@ public class DependencyTests extends AbstractUnitTest {
 
         // THEN
         assertLatestState(systemState().addUnits(
-                unit(unitA1ID).withState(CREATED).withDesiredState(UNSET).withDependencies(unitA2ID, unitA3ID),
-                unit(unitA2ID).withState(CREATED).withDesiredState(UNSET),
-                unit(unitA3ID).withState(CREATED).withDesiredState(UNSET),
-                unit(unitB1ID).withState(CREATED).withDesiredState(UNSET).withDependencies(unitB2ID, unitB3ID),
-                unit(unitB2ID).withState(CREATED).withDesiredState(UNSET),
-                unit(unitB3ID).withState(CREATED).withDesiredState(UNSET)
+                unit(unitA1ID).withState(STOPPED).withDesiredState(UNSET).withDependencies(unitA2ID, unitA3ID),
+                unit(unitA2ID).withState(STOPPED).withDesiredState(UNSET),
+                unit(unitA3ID).withState(STOPPED).withDesiredState(UNSET),
+                unit(unitB1ID).withState(STOPPED).withDesiredState(UNSET).withDependencies(unitB2ID, unitB3ID),
+                unit(unitB2ID).withState(STOPPED).withDesiredState(UNSET),
+                unit(unitB3ID).withState(STOPPED).withDesiredState(UNSET)
         ).build());
     }
 
@@ -224,8 +224,8 @@ public class DependencyTests extends AbstractUnitTest {
 
         // THEN
         assertLatestState(systemState().addUnits(
-                unit(unit1ID).withState(CREATED).withDesiredState(UNSET),
-                unit(unit2ID).withState(CREATED).withDesiredState(UNSET)
+                unit(unit1ID).withState(STOPPED).withDesiredState(UNSET),
+                unit(unit2ID).withState(STOPPED).withDesiredState(UNSET)
         ).build());
     }
 
@@ -253,10 +253,10 @@ public class DependencyTests extends AbstractUnitTest {
 
         // THEN
         assertLatestState(systemState().addUnits(
-                unit(unit1ID).withState(CREATED).withDesiredState(UNSET),
-                unit(unit2ID).withState(CREATED).withDesiredState(UNSET),
-                unit(unit3ID).withState(CREATED).withDesiredState(UNSET),
-                unit(unit4ID).withState(CREATED).withDesiredState(UNSET)
+                unit(unit1ID).withState(STOPPED).withDesiredState(UNSET),
+                unit(unit2ID).withState(STOPPED).withDesiredState(UNSET),
+                unit(unit3ID).withState(STOPPED).withDesiredState(UNSET),
+                unit(unit4ID).withState(STOPPED).withDesiredState(UNSET)
         ).build());
     }
 
@@ -279,9 +279,9 @@ public class DependencyTests extends AbstractUnitTest {
 
         // THEN
         assertLatestState(systemState().addUnits(
-                unit(unit1ID).withState(CREATED).withDesiredState(UNSET).withDependencies(unit2ID),
-                unit(unit2ID).withState(CREATED).withDesiredState(UNSET),
-                unit(unit3ID).withState(CREATED).withDesiredState(UNSET)
+                unit(unit1ID).withState(STOPPED).withDesiredState(UNSET).withDependencies(unit2ID),
+                unit(unit2ID).withState(STOPPED).withDesiredState(UNSET),
+                unit(unit3ID).withState(STOPPED).withDesiredState(UNSET)
         ).build());
     }
 
@@ -311,11 +311,11 @@ public class DependencyTests extends AbstractUnitTest {
 
         // THEN
         assertLatestState(systemState().addUnits(
-                unit(unit1ID).withState(CREATED).withDesiredState(UNSET).withDependencies(unit2ID),
-                unit(unit2ID).withState(CREATED).withDesiredState(UNSET).withDependencies(unit3ID),
-                unit(unit3ID).withState(CREATED).withDesiredState(UNSET),
-                unit(unit4ID).withState(CREATED).withDesiredState(UNSET),
-                unit(unit5ID).withState(CREATED).withDesiredState(UNSET)
+                unit(unit1ID).withState(STOPPED).withDesiredState(UNSET).withDependencies(unit2ID),
+                unit(unit2ID).withState(STOPPED).withDesiredState(UNSET).withDependencies(unit3ID),
+                unit(unit3ID).withState(STOPPED).withDesiredState(UNSET),
+                unit(unit4ID).withState(STOPPED).withDesiredState(UNSET),
+                unit(unit5ID).withState(STOPPED).withDesiredState(UNSET)
         ).build());
     }
 
@@ -341,10 +341,10 @@ public class DependencyTests extends AbstractUnitTest {
 
         // THEN
         assertLatestState(systemState().addUnits(
-                unit(unit1ID).withState(CREATED).withDesiredState(UNSET).withDependencies(unit2ID),
-                unit(unit2ID).withState(CREATED).withDesiredState(UNSET).withDependencies(unit3ID),
-                unit(unit3ID).withState(CREATED).withDesiredState(UNSET),
-                unit(unit4ID).withState(CREATED).withDesiredState(UNSET)
+                unit(unit1ID).withState(STOPPED).withDesiredState(UNSET).withDependencies(unit2ID),
+                unit(unit2ID).withState(STOPPED).withDesiredState(UNSET).withDependencies(unit3ID),
+                unit(unit3ID).withState(STOPPED).withDesiredState(UNSET),
+                unit(unit4ID).withState(STOPPED).withDesiredState(UNSET)
         ).build());
     }
 
@@ -374,11 +374,11 @@ public class DependencyTests extends AbstractUnitTest {
 
         // THEN
         assertLatestState(systemState().addUnits(
-                unit(unit1ID).withState(CREATED).withDesiredState(UNSET).withDependencies(unit2ID),
-                unit(unit2ID).withState(CREATED).withDesiredState(UNSET).withDependencies(unit3ID),
-                unit(unit3ID).withState(CREATED).withDesiredState(UNSET),
-                unit(unit4ID).withState(CREATED).withDesiredState(UNSET),
-                unit(unit5ID).withState(CREATED).withDesiredState(UNSET)
+                unit(unit1ID).withState(STOPPED).withDesiredState(UNSET).withDependencies(unit2ID),
+                unit(unit2ID).withState(STOPPED).withDesiredState(UNSET).withDependencies(unit3ID),
+                unit(unit3ID).withState(STOPPED).withDesiredState(UNSET),
+                unit(unit4ID).withState(STOPPED).withDesiredState(UNSET),
+                unit(unit5ID).withState(STOPPED).withDesiredState(UNSET)
         ).build());
     }
 
@@ -411,12 +411,12 @@ public class DependencyTests extends AbstractUnitTest {
 
         // THEN
         assertLatestState(systemState().addUnits(
-                unit(unitA1ID).withState(CREATED).withDesiredState(UNSET),
-                unit(unitA2ID).withState(CREATED).withDesiredState(UNSET),
-                unit(unitA3ID).withState(CREATED).withDesiredState(UNSET),
-                unit(unitB1ID).withState(CREATED).withDesiredState(UNSET).withDependencies(unitB3ID),
-                unit(unitB2ID).withState(CREATED).withDesiredState(UNSET),
-                unit(unitB3ID).withState(CREATED).withDesiredState(UNSET)
+                unit(unitA1ID).withState(STOPPED).withDesiredState(UNSET),
+                unit(unitA2ID).withState(STOPPED).withDesiredState(UNSET),
+                unit(unitA3ID).withState(STOPPED).withDesiredState(UNSET),
+                unit(unitB1ID).withState(STOPPED).withDesiredState(UNSET).withDependencies(unitB3ID),
+                unit(unitB2ID).withState(STOPPED).withDesiredState(UNSET),
+                unit(unitB3ID).withState(STOPPED).withDesiredState(UNSET)
         ).build());
     }
 
