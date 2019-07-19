@@ -244,7 +244,7 @@ public class TransitionTests extends AbstractUnitTest {
                 unit("unit1").withState(STOPPING).withDesiredState(UNSET)).build());
 
         // WHEN
-        bus.sink().accept(command("unit1", STOP));
+        bus.sink().accept(command("unit1", START));
         testComputationScheduler.triggerActions();
 
         // THEN

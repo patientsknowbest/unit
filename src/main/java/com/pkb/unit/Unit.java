@@ -244,6 +244,7 @@ public abstract class Unit {
 
             if (state == STOPPING) {
                 publishState("Stopping in progress, cannot be started");
+                return;
             }
 
             setAndPublishState(STARTING);
