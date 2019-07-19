@@ -1,5 +1,6 @@
 package com.pkb.unit;
 
+import static com.pkb.unit.Command.CLEAR_DESIRED_STATE;
 import static com.pkb.unit.Command.DISABLE;
 import static com.pkb.unit.Command.ENABLE;
 import static com.pkb.unit.Command.START;
@@ -22,6 +23,7 @@ import static com.pkb.unit.message.payload.ImmutableTransition.transition;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
 
 import com.pkb.unit.message.Message;
 import com.pkb.unit.message.payload.Dependencies;
@@ -60,18 +62,33 @@ public abstract class Unit {
      */
     private final Bus bus;
 
+    /**
+     * If the unit is ENABLED or DISABLED, then the retryPeriod defines the frequency
+     * that it will try to return to the desired state.
+     */
+    private final long retryPeriod;
+
+    /**
+     * If the unit is ENABLED or DISABLED, then the retryPeriod defines the frequency
+     * that it will try to return to the desired state.
+     */
+    private final TimeUnit retryTimeUnit;
+
     private final List<CommandHandler> commandHandlers = List.of(
             new StartHandler(),
             new StopHandler(),
             new EnableHandler(),
-            new DisableHandler()
+            new DisableHandler(),
+            new ClearDesiredStateHandler()
     );
 
     private Map<String, Optional<State>> mandatoryDependencies = new ConcurrentHashMap<>();
 
-    public Unit(String id, Bus bus) {
+    public Unit(String id, Bus bus, long retryPeriod, TimeUnit retryTimeUnit) {
         this.id = id;
         this.bus = bus;
+        this.retryPeriod = retryPeriod;
+        this.retryTimeUnit = retryTimeUnit;
 
         Filters.payloads(bus.events(), Command.class, id)
                 .observeOn(Schedulers.computation())
@@ -89,10 +106,21 @@ public abstract class Unit {
                 .observeOn(Schedulers.computation())
                 .subscribe(ignored -> handleReportDependencies());
 
+        Observable.interval(retryPeriod, retryTimeUnit, Schedulers.computation())
+                .subscribe(this::handleRetry);
+
         // Advertise our full current state
         unchecked(() -> bus.sink().accept(message(NewUnit.class).withPayload(newUnit(id))));
         handleReportDependencies();
         handleReportState();
+    }
+
+    private void handleRetry(Long ignored) {
+        if (desiredState == ENABLED && state != STARTED) {
+            sendCommand(id, START);
+        } else if (desiredState == DISABLED && state != STOPPED) {
+            sendCommand(id, STOP);
+        }
     }
 
     private void handleReportDependencies() {
@@ -199,7 +227,7 @@ public abstract class Unit {
         @Override
         public boolean handles(Command c) {
             // only start if current state is stopped
-            return c == START && (state == State.STOPPED || state == CREATED || state == STARTING || state == STARTED);
+            return c == START && (state == State.STOPPED || state == CREATED || state == STARTING || state == STARTED || state == FAILED);
         }
 
         @Override
@@ -236,7 +264,7 @@ public abstract class Unit {
 
         @Override
         public boolean handles(Command c) {
-            return c == STOP && (state == State.STARTED || state == FAILED || state == STOPPING || state == STARTING || state == STOPPED);
+            return c == STOP && (state == State.STARTED || state == FAILED || state == STOPPING || state == STARTING || state == STOPPED || state == CREATED);
         }
 
         @Override
@@ -245,6 +273,12 @@ public abstract class Unit {
                 setAndPublishState(state, "Already STOPPED. No operation executed.");
                 return;
             }
+
+            if (state == CREATED) {
+                setAndPublishState(STOPPED, "Never started.");
+                return;
+            }
+
             setAndPublishState(STOPPING);
             Observable.fromCallable(Unit.this::handleStop)
                     .subscribeOn(Schedulers.io())
@@ -270,8 +304,7 @@ public abstract class Unit {
     private void setAndPublishState(State newState, String comment) {
         State previous = this.state;
         this.state = newState;
-        unchecked(() -> this.bus.sink().accept(makeTransitionEvent(previous
-                , desiredState, comment)));
+        unchecked(() -> this.bus.sink().accept(makeTransitionEvent(previous, desiredState, comment)));
     }
 
     public enum HandleOutcome {
@@ -281,6 +314,14 @@ public abstract class Unit {
     abstract HandleOutcome handleStart();
 
     abstract HandleOutcome handleStop();
+
+    /**
+     * Implementations may call this to inform the system that they have failed and that dependents should
+     * stop.
+     */
+    protected void failed() {
+        setAndPublishState(FAILED);
+    }
 
 
     private Message<Transition> makeTransitionEvent(State previous, DesiredState previousDesired, String comment) {
@@ -294,5 +335,19 @@ public abstract class Unit {
 
     String id() {
         return id;
+    }
+
+    private class ClearDesiredStateHandler implements CommandHandler {
+        @Override
+        public boolean handles(Command c) {
+            return c == CLEAR_DESIRED_STATE;
+        }
+
+        @Override
+        public void handle(Command c) {
+            DesiredState previous = desiredState;
+            desiredState = UNSET;
+            unchecked(() -> bus.sink().accept(makeTransitionEvent(state, previous, "")));
+        }
     }
 }
