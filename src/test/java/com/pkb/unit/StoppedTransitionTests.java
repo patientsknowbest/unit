@@ -227,6 +227,268 @@ public class StoppedTransitionTests extends AbstractUnitTest {
                 .build());
     }
 
+    // II/1
+    @Test
+    public void whenEnableStoppedAndEnableStartingThenStarted() throws Exception {
+        // GIVEN
+        setupComputationTestScheduler();
+        setupIOTestScheduler();
+
+        // WHEN
+        FakeUnit unit = new FakeUnit("unit1", bus);
+        bus.sink().accept(command("unit1", ENABLE));
+        testComputationScheduler.triggerActions();
+
+        // THEN
+        assertLatestState(systemState()
+                .addUnits(unit("unit1").withState(STARTING).withDesiredState(ENABLED))
+                .build());
+
+        // WHEN
+        bus.sink().accept(command("unit1", ENABLE));
+        unit.completeStart();
+        testComputationScheduler.triggerActions();
+        testIOScheduler.triggerActions();
+
+        // THEN
+        assertLatestState(systemState()
+                .addUnits(unit("unit1").withState(STARTED).withDesiredState(ENABLED))
+                .build());
+    }
+
+    // II/2
+    @Test
+    public void whenEnableStoppedAndStartStartingThenStarted() throws Exception {
+        // GIVEN
+        setupComputationTestScheduler();
+        setupIOTestScheduler();
+
+        // WHEN
+        FakeUnit unit = new FakeUnit("unit1", bus);
+        bus.sink().accept(command("unit1", ENABLE));
+        testComputationScheduler.triggerActions();
+
+        // THEN
+        assertLatestState(systemState()
+                .addUnits(unit("unit1").withState(STARTING).withDesiredState(ENABLED))
+                .build());
+
+        // WHEN
+        bus.sink().accept(command("unit1", START));
+        unit.completeStart();
+        testComputationScheduler.triggerActions();
+        testIOScheduler.triggerActions();
+
+        // THEN
+        assertLatestState(systemState()
+                .addUnits(unit("unit1").withState(STARTED).withDesiredState(ENABLED))
+                .build());
+    }
+
+    // II/3
+    @Test
+    public void whenEnableStoppedAndDisableStartingAndCompleteStartAndStopRetryStartedThenStarted() throws Exception {
+        // GIVEN
+        setupComputationTestScheduler();
+        setupIOTestScheduler();
+
+        // WHEN
+        FakeUnit unit = new FakeUnit("unit1", bus);
+        bus.sink().accept(command("unit1", ENABLE));
+        testComputationScheduler.triggerActions();
+
+        // THEN
+        assertLatestState(systemState()
+                .addUnits(unit("unit1").withState(STARTING).withDesiredState(ENABLED))
+                .build());
+
+        // WHEN
+        bus.sink().accept(command("unit1", DISABLE));
+        unit.completeStart();
+        testComputationScheduler.triggerActions();
+        testIOScheduler.triggerActions();
+
+        // THEN
+        assertLatestState(systemState()
+                .addUnits(unit("unit1").withState(STARTED).withDesiredState(DISABLED))
+                .build());
+
+        // WHEN
+        testComputationScheduler.advanceTimeBy(FakeUnit.RETRY_PERIOD, FakeUnit.RETRY_PERIOD_UNIT);
+        unit.completeStop();
+        testComputationScheduler.triggerActions();
+        testIOScheduler.triggerActions();
+
+        // THEN
+        assertLatestState(systemState().addUnits(
+                unit("unit1").withState(STOPPED).withDesiredState(DISABLED))
+                .build());
+    }
+
+    // II/4
+    @Test
+    public void whenEnableStoppedAndStopStartingThenStarted() throws Exception {
+        // GIVEN
+        setupComputationTestScheduler();
+        setupIOTestScheduler();
+
+        // WHEN
+        FakeUnit unit = new FakeUnit("unit1", bus);
+        bus.sink().accept(command("unit1", ENABLE));
+        testComputationScheduler.triggerActions();
+
+        // THEN
+        assertLatestState(systemState()
+                .addUnits(unit("unit1").withState(STARTING).withDesiredState(ENABLED))
+                .build());
+
+        // WHEN
+        bus.sink().accept(command("unit1", STOP));
+        unit.completeStart();
+        testComputationScheduler.triggerActions();
+        testIOScheduler.triggerActions();
+
+        // THEN
+        assertLatestState(systemState()
+                .addUnits(unit("unit1").withState(STARTED).withDesiredState(ENABLED))
+                .build());
+
+        // WHEN
+        testComputationScheduler.advanceTimeBy(FakeUnit.RETRY_PERIOD, FakeUnit.RETRY_PERIOD_UNIT);
+        unit.completeStop(); // not needed in expected case and remains STARTED
+        testComputationScheduler.triggerActions();
+        testIOScheduler.triggerActions();
+
+        // THEN
+        assertLatestState(systemState().addUnits(
+                unit("unit1").withState(STARTED).withDesiredState(ENABLED))
+                .build());
+    }
+
+    // II/5
+    @Test
+    public void whenEnableStoppedAndClearDesiredStateStartingThenStartedUnset() throws Exception {
+        // GIVEN
+        setupComputationTestScheduler();
+        setupIOTestScheduler();
+
+        // WHEN
+        FakeUnit unit = new FakeUnit("unit1", bus);
+        bus.sink().accept(command("unit1", ENABLE));
+        testComputationScheduler.triggerActions();
+
+        // THEN
+        assertLatestState(systemState()
+                .addUnits(unit("unit1").withState(STARTING).withDesiredState(ENABLED))
+                .build());
+
+        // WHEN
+        bus.sink().accept(command("unit1", CLEAR_DESIRED_STATE));
+        unit.completeStart();
+        testComputationScheduler.triggerActions();
+        testIOScheduler.triggerActions();
+
+        // THEN
+        assertLatestState(systemState()
+                .addUnits(unit("unit1").withState(STARTED).withDesiredState(UNSET))
+                .build());
+    }
+
+    // I/6
+    @Test
+    public void whenStartStoppedAndEnableStartingThenStartedEnabled() throws Exception {
+        // GIVEN
+        setupComputationTestScheduler();
+        setupIOTestScheduler();
+
+        // WHEN
+        FakeUnit unit = new FakeUnit("unit1", bus);
+        bus.sink().accept(command("unit1", START));
+        testComputationScheduler.triggerActions();
+
+        // THEN
+        assertLatestState(systemState()
+                .addUnits(unit("unit1").withState(STARTING).withDesiredState(UNSET))
+                .build());
+        // WHEN
+        bus.sink().accept(command("unit1", ENABLE));
+        unit.completeStart();
+        testComputationScheduler.triggerActions();
+        testIOScheduler.triggerActions();
+
+        // THEN
+        assertLatestState(systemState()
+                .addUnits(unit("unit1").withState(STARTED).withDesiredState(ENABLED))
+                .build());
+    }
+
+    // I/7
+    @Test
+    public void whenStartStoppedAndStartStartingThenStarted() throws Exception {
+        // GIVEN
+        setupComputationTestScheduler();
+        setupIOTestScheduler();
+
+        // WHEN
+        FakeUnit unit = new FakeUnit("unit1", bus);
+        bus.sink().accept(command("unit1", START));
+        testComputationScheduler.triggerActions();
+
+        // THEN
+        assertLatestState(systemState()
+                .addUnits(unit("unit1").withState(STARTING).withDesiredState(UNSET))
+                .build());
+        // WHEN
+        bus.sink().accept(command("unit1", START));
+        unit.completeStart();
+        testComputationScheduler.triggerActions();
+        testIOScheduler.triggerActions();
+
+        // THEN
+        assertLatestState(systemState()
+                .addUnits(unit("unit1").withState(STARTED).withDesiredState(UNSET))
+                .build());
+    }
+
+    // I/8
+    @Test
+    public void whenStartStoppedAndDisableStartingAndStopRetryStartedThenStarted() throws Exception {
+        // GIVEN
+        setupComputationTestScheduler();
+        setupIOTestScheduler();
+
+        // WHEN
+        FakeUnit unit = new FakeUnit("unit1", bus);
+        bus.sink().accept(command("unit1", START));
+        testComputationScheduler.triggerActions();
+
+        // THEN
+        assertLatestState(systemState()
+                .addUnits(unit("unit1").withState(STARTING).withDesiredState(UNSET))
+                .build());
+        // WHEN
+        bus.sink().accept(command("unit1", DISABLE));
+        unit.completeStart();
+        unit.completeStop(); // STOP of DISABLE command will be ignored until START has been finished
+        testComputationScheduler.triggerActions();
+        testIOScheduler.triggerActions();
+
+        // THEN
+        assertLatestState(systemState()
+                .addUnits(unit("unit1").withState(STARTED).withDesiredState(DISABLED))
+                .build());
+
+        // WHEN
+        testComputationScheduler.advanceTimeBy(FakeUnit.RETRY_PERIOD, FakeUnit.RETRY_PERIOD_UNIT); // retry logic sends STOP
+        testComputationScheduler.triggerActions();
+        testIOScheduler.triggerActions();
+
+        // THEN
+        assertLatestState(systemState().addUnits(
+                unit("unit1").withState(STOPPED).withDesiredState(DISABLED))
+                .build());
+    }
+
     // II/9
     @Test
     public void whenStartStoppedAndStopStartingThenStarted() throws Exception {
@@ -248,6 +510,35 @@ public class StoppedTransitionTests extends AbstractUnitTest {
         bus.sink().accept(command("unit1", STOP));
         unit1.completeStart();
         unit1.completeStop(); // will be ignored
+        testComputationScheduler.triggerActions();
+        testIOScheduler.triggerActions();
+
+        // THEN
+        assertLatestState(systemState().addUnits(
+                unit("unit1").withState(STARTED).withDesiredState(UNSET))
+                .build());
+    }
+
+    // II/10
+    @Test
+    public void whenStartStoppedAndClearDesiredStateStartingThenStartedUnset() throws Exception {
+        // GIVEN
+        setupComputationTestScheduler();
+        setupIOTestScheduler();
+
+        // WHEN
+        FakeUnit unit1 = new FakeUnit("unit1", bus);
+        bus.sink().accept(command("unit1", START));
+        testComputationScheduler.triggerActions();
+
+        // THEN
+        assertLatestState(systemState().addUnits(
+                unit("unit1").withState(STARTING).withDesiredState(UNSET))
+                .build());
+
+        // WHEN
+        bus.sink().accept(command("unit1", CLEAR_DESIRED_STATE));
+        unit1.completeStart();
         testComputationScheduler.triggerActions();
         testIOScheduler.triggerActions();
 
