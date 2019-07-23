@@ -2,11 +2,28 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-    <modelVersion>4.0.0</modelVersion>
 
+    <profiles>
+        <!-- Use the current branch / tag as the version on CI -->
+        <profile>
+            <id>ci-build</id>
+            <activation>
+                <activeByDefault>false</activeByDefault>
+                <property>
+                    <name>env.TRAVIS_BRANCH</name>
+                </property>
+            </activation>
+            <properties>
+                <revision>${env.TRAVIS_BRANCH}</revision>
+            </properties>
+        </profile>
+    </profiles>
+
+
+    <modelVersion>4.0.0</modelVersion>
     <groupId>com.pkb</groupId>
     <artifactId>unit</artifactId>
-    <version>1.0-SNAPSHOT</version>
+    <version>${revision}</version>
     <properties>
         <immutables.version>2.7.4</immutables.version>
         <junit.version>4.12</junit.version>
@@ -15,6 +32,7 @@
         <rxrelay.version>2.1.0</rxrelay.version>
         <approvalcrest.version>0.21</approvalcrest.version>
         <guava.version>28.0-jre</guava.version>
+        <revision>0.0.0-SNAPSHOT</revision>
     </properties>
     <dependencies>
         <dependency>
@@ -87,4 +105,11 @@
             </plugin>
         </plugins>
     </build>
+    <distributionManagement>
+        <repository>
+            <id>bintray-patientsknowbest-patientsknowbest</id>
+            <name>patientsknowbest-patientsknowbest</name>
+            <url>https://api.bintray.com/maven/patientsknowbest/patientsknowbest/unit/;publish=1</url>
+        </repository>
+    </distributionManagement>
 </project>
