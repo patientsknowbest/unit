@@ -7,3 +7,13 @@ deploy:
   skip_cleanup: true
   on:
     all_branches: true
+
+addons:
+  sonarcloud:
+    organization: "patientsknowbest"
+    token:
+      secure: "fNYwfb+lU9rKWelBEJpE5LRxVXVzdx050n1ODGOJo4oIdtojjVxdT9GCt9ty4QQUWWpsbABx3/KCXaE4f6OnXd/HYPImaGFvWAhKM4NwtMW5jYwj5xFhyvLLcTxAEKr2ZVq6SdgfKIdKYRiWmARFIxbSBq4v+xAYWKBlVSsg05+/jK5JZ1AGJksbsaL4dgTkG9FcOf87cqgJ35s7HNxeNoMw96fLLMeAzUj1LgRaNG/2CtcerprYLADBlfYWRt0XOs50QHqSrj7aVlY9r6QxGhId8zQUQYek/7oB9cBTmKi2gkkRitMWrV+57t5yz6JW+676qs8klKabwRFO9klG/H380UP+CrfltTuk4Nznzt4qba1hq6Pq6GzqmHBOb1rYPSai8fBv8kn0nsArcb9O2UQRgQFgW/mWk9RGpAqYLMe/jfuFwp9kjXxHlYDrtSt/XZo+Cxc8FuS+GUulFCNMOhE6uPEWW4qrLs22OG1tBE+azlbuq/fr5+MEpFLyWQXKBn/jYFD73GjJMhyHxCPUDOsgmuRwVT4xT1NhrZqXLDNQRhLzQGwQmQ+mzjoo1RXQOwuAIbOO8UQKQ5xMu8Ly+j8DJGzEVbkavluFMkWHH4UQ3c3ugZgjsF4NZJjPwrM0kpmz84bqhvwo0KSXOrHVRjWf/qh2qKiLM51QtRH0/x8="
+
+script:
+  # the following command line builds the project, runs the tests with coverage and then execute the SonarCloud analysis
+  - mvn clean org.jacoco:jacoco-maven-plugin:prepare-agent install sonar:sonar
