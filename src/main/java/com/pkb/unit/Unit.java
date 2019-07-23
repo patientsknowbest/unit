@@ -5,6 +5,7 @@ import static com.pkb.unit.Command.DISABLE;
 import static com.pkb.unit.Command.ENABLE;
 import static com.pkb.unit.Command.START;
 import static com.pkb.unit.Command.STOP;
+import static com.pkb.unit.ConsumerWithoutParameter.consumer;
 import static com.pkb.unit.DesiredState.DISABLED;
 import static com.pkb.unit.DesiredState.ENABLED;
 import static com.pkb.unit.DesiredState.UNSET;
@@ -36,7 +37,9 @@ import io.reactivex.schedulers.Schedulers;
 import io.vavr.collection.List;
 
 /**
- * A Unit is a base class for a restartable,
+ * A Unit is a base class for a restartable, stoppable service that can have depencencies and
+ * that other Unitscan depend on. When a Unit is started then it tries the start its dependencies.
+ * Once all of its dependencies has been started it starts itself.
  */
 public abstract class Unit {
     /**
@@ -45,7 +48,7 @@ public abstract class Unit {
     private final String id;
 
     /**
-     * state represents the current state of the unit
+     * state represents the current state of the unit.
      */
     private State state = STOPPED;
 
@@ -69,6 +72,11 @@ public abstract class Unit {
             new ClearDesiredStateHandler()
     );
 
+    /**
+     * A list of {@link Unit}s mapped to their {@link Unit#state}s that this Unit depends on.
+     * This map is used to specify if all the dependencies have been started so that this Unit
+     * is eligible for starting as well.
+     */
     private Map<String, Optional<State>> mandatoryDependencies = new ConcurrentHashMap<>();
 
     /**
@@ -92,21 +100,20 @@ public abstract class Unit {
 
         Filters.messages(bus.events(), ReportStateRequest.class, id)
                 .observeOn(Schedulers.computation())
-                .subscribe(ignored -> handleReportState());
+                .subscribe(consumer(this::handleReportState));
 
         Filters.messages(bus.events(), ReportDependenciesRequest.class, id)
                 .observeOn(Schedulers.computation())
-                .subscribe(ignored -> handleReportDependencies());
+                .subscribe(consumer(this::handleReportDependencies));
 
         Observable.interval(retryPeriod, retryTimeUnit, Schedulers.computation())
-                .subscribe(ignored -> handleRetry());
+                .subscribe(consumer(this::handleRetry));
 
         // Advertise our full current state
         unchecked(() -> bus.sink().accept(message(NewUnit.class).withPayload(newUnit(id))));
         handleReportDependencies();
         handleReportState();
     }
-
 
     /**
      * Adds a dependency to this unit.
@@ -186,6 +193,11 @@ public abstract class Unit {
         return state;
     }
 
+    /**
+     * Checks if the unit is in its desired state and sends the appropriate {@link Command}
+     * to itself to try to get into it. E.g. if the Unit's desired state is {@link DesiredState}
+     * but the unit is in FAILED state then it sends START to itself.
+     */
     private void handleRetry() {
         if (desiredState == ENABLED && state != STARTED) {
             sendCommand(id, START);
@@ -194,15 +206,26 @@ public abstract class Unit {
         }
     }
 
+    /**
+     * Sends a Message to the bus containing the dependencies of this unit.
+     */
     private void handleReportDependencies() {
         unchecked(() ->
             bus.sink().accept(message(Dependencies.class).withPayload(dependencies(id, mandatoryDependencies.keySet()))));
     }
 
+    /**
+     * Sends a Message to the bus containing its state and desired state.
+     */
     private void handleReportState() {
         publishState();
     }
 
+    /**
+     * Called every time a unit sends a transition event to the bus. If the transitioning
+     * unit is a dependency of this unit then it start or stops itself upon certain conditions.
+     * @param transition the event that was sent to the bus
+     */
     private void handleDependencyTransition(Transition transition) {
         if (!mandatoryDependencies.containsKey(transition.unitId())) {
             return;
@@ -216,10 +239,19 @@ public abstract class Unit {
         }
     }
 
+    /**
+     * @return true when all the units are in STARTED state which this unit depends on. False otherwise.
+     */
     private boolean allDepsHaveStarted() {
         return mandatoryDependencies.values().stream().allMatch(s -> s.isPresent() && s.get() == STARTED);
     }
 
+    /**
+     * Searches for an appropriate {@link CommandHandler} to pass the command to. If no command
+     * handler found that can process the given command then it publishes current state of
+     * the Unit with a comment and returns without further operation.
+     * @param command the command the method searches handler for and passes to
+     */
     private synchronized void handle(Command command) {
         commandHandlers
                 .find(ch -> ch.handles(command))
@@ -228,12 +260,19 @@ public abstract class Unit {
 
     }
 
+    /**
+     * Handles {@link Command}s based on the implementation of its implementors.
+     */
     private interface CommandHandler {
         boolean handles(Command c);
 
         void handle(Command c);
     }
 
+    /**
+     * Handles {@link Command#ENABLE} via setting the desired state of the Unit and sending
+     * START command to the Unit if it is not in STARTED state.
+     */
     private class EnableHandler implements CommandHandler {
         @Override
         public boolean handles(Command c) {
@@ -252,6 +291,10 @@ public abstract class Unit {
         }
     }
 
+    /**
+     * Handles {@link Command#DISABLE} via setting the desired state of the Unit and sending
+     * STOP command to the Unit if it is not in STOPPED state.
+     */
     private class DisableHandler implements CommandHandler {
         @Override
         public boolean handles(Command c) {
@@ -270,6 +313,11 @@ public abstract class Unit {
         }
     }
 
+    /**
+     * Handles {@link Command#START} after it checks if the Unit is eligible for transitioning to
+     * STARTED state. The actual startup logic, that is implemnted by the clients, is run on an IO
+     * thread.
+     */
     private class StartHandler implements CommandHandler {
 
         @Override
@@ -313,6 +361,11 @@ public abstract class Unit {
         }
     }
 
+    /**
+     * Handles {@link Command#STOP} after it checks if the Unit is eligible for transitioning to
+     * STOPPED state. The actual stop logic, that is implemnted by the clients, is run on an IO
+     * thread. This handler also tries to START the Unit if it is in ENABLED state.
+     */
     private class StopHandler implements CommandHandler {
 
         @Override
@@ -355,58 +408,9 @@ public abstract class Unit {
         }
     }
 
-    private void setAndPublishState(State newState) {
-        setAndPublishState(newState, "");
-    }
-
-    private void setAndPublishState(State newState, String comment) {
-        State previous = this.state;
-        this.state = newState;
-        publishState(previous, desiredState, comment);
-    }
-
-    private void publishState() {
-        publishState("");
-    }
-
-    private void publishState(String comment) {
-        publishState(state, desiredState, comment);
-    }
-
-    private void publishState(State previous, DesiredState previousDesired) {
-        publishState(previous, previousDesired, "");
-    }
-
-    private void publishState(State previous, DesiredState previousDesired, String comment) {
-        unchecked(() -> this.bus.sink().accept(makeTransitionEvent(previous, previousDesired, comment)));
-    }
-
-    public enum HandleOutcome {
-        SUCCESS, FAILURE
-    }
-
-    protected abstract HandleOutcome handleStart();
-
-    protected abstract HandleOutcome handleStop();
-
     /**
-     * Implementations may call this to inform the system that they have failed and that dependents should
-     * stop.
+     * Handles {@link Command#CLEAR_DESIRED_STATE} command that can be consumed by the unit.
      */
-    protected void failed() {
-        setAndPublishState(FAILED);
-    }
-
-
-    private Message<Transition> makeTransitionEvent(State previous, DesiredState previousDesired, String comment) {
-        return message(Transition.class)
-                .withPayload(transition(id, state, previous, desiredState, previousDesired, Optional.of(comment)));
-    }
-
-    private void sendCommand(String id, Command command) {
-        unchecked(() -> bus.sink().accept(message(Command.class).withTarget(id).withPayload(command)));
-    }
-
     private class ClearDesiredStateHandler implements CommandHandler {
         @Override
         public boolean handles(Command c) {
@@ -420,4 +424,136 @@ public abstract class Unit {
             publishState(state, previousDesired);
         }
     }
+
+    /**
+     * Changes the current state of the Unit to newState and sends a Message with the
+     * previous and new {@link State} and {@link DesiredState} to the bus.
+     *
+     * @param newState the state to change Unit's current state to. Pass the current state if not changed.
+     */
+    private void setAndPublishState(State newState) {
+        setAndPublishState(newState, "");
+    }
+
+    /**
+     * Changes the current state of the Unit to newState and sends a Message with the
+     * previous and new {@link State}, the current {@link DesiredState} and the given
+     * comment to the {@link Bus}.
+     *
+     * @param newState the state to change Unit's current state to. Pass the current
+     *                 state if not changed.
+     * @param comment a text to include into the message. Pass the current state
+     *                if not changed.
+     */
+    private void setAndPublishState(State newState, String comment) {
+        State previous = this.state;
+        this.state = newState;
+        publishState(previous, desiredState, comment);
+    }
+
+    /**
+     * Sends a Message with the current {@link State} and current {@link DesiredState}
+     * to the {@link Bus}.
+     */
+    private void publishState() {
+        publishState("");
+    }
+
+    /**
+     * Sends a Message with the current {@link State} and current {@link DesiredState} and
+     * the given comment to the {@link Bus}.
+     */
+    private void publishState(String comment) {
+        publishState(state, desiredState, comment);
+    }
+
+    /**
+     * Sends a Message with the previous and current {@link State}, and with the previous and
+     * the current {@link DesiredState} and the given comment to the {@link Bus}.
+     *
+     * @param previous the {@link State} of the Unit before change. Pass the current state
+     *                 if not changed.
+     * @param previousDesired the {@link DesiredState} of the Unit before change. Pass the
+     *                        current state if not changed.
+     */
+    private void publishState(State previous, DesiredState previousDesired) {
+        publishState(previous, previousDesired, "");
+    }
+
+    /**
+     * Sends a Message with the previous and current {@link State}, and with the previous and
+     * the current {@link DesiredState} and the given comment to the {@link Bus}.
+     *
+     * @param previous the {@link State} of the Unit before change. Pass the current state
+     *                 if not changed.
+     * @param previousDesired the {@link DesiredState} of the Unit before change. Pass the
+     *                        current state if not changed.
+     * @param comment a text to include into the message. Pass the current state if not
+     *                changed.
+     */
+    private void publishState(State previous, DesiredState previousDesired, String comment) {
+        unchecked(() -> this.bus.sink().accept(makeTransitionEvent(previous, previousDesired, comment)));
+    }
+
+    /**
+     * Indicates the result of Command handling.
+     */
+    public enum HandleOutcome {
+        SUCCESS, FAILURE
+    }
+
+    /**
+     * Implements the logic that should be done in order to start the service that this Unit
+     * wraps.
+     *
+     * @return the result of the startup process that should be {@link HandleOutcome#SUCCESS}
+     * if the startup succeeded or {@link HandleOutcome#FAILURE} otherwise.
+     */
+    protected abstract HandleOutcome handleStart();
+
+    /**
+     * Implements the logic that should be done in order to tear down the service that this Unit
+     * wraps.
+     *
+     * @return the result of the stopping process that should be {@link HandleOutcome#SUCCESS}
+     * if the tear down succeeded or {@link HandleOutcome#FAILURE} otherwise.
+     *
+     */
+    protected abstract HandleOutcome handleStop();
+
+    /**
+     * Implementations may call this to inform the system that they have failed and that dependents should
+     * stop.
+     */
+    protected void failed() {
+        setAndPublishState(FAILED);
+    }
+
+
+    /**
+     * Creates a Message with the previous and current {@link State}, and with the previous and
+     * the current {@link DesiredState} and the given comment.
+     *
+     * @param previous the {@link State} of the Unit before change. Pass the current state
+     *                 if not changed.
+     * @param previousDesired the {@link DesiredState} of the Unit before change. Pass the
+     *                        current state if not changed.
+     * @param comment a text to include into the message. Pass the current state if not
+     *                changed.
+     * @return the compiled Message that can be sent to the Bus
+     */
+    private Message<Transition> makeTransitionEvent(State previous, DesiredState previousDesired, String comment) {
+        return message(Transition.class)
+                .withPayload(transition(id, state, previous, desiredState, previousDesired, Optional.of(comment)));
+    }
+
+    /**
+     * Sends a Command the the given Unit through the {@link Bus}
+     * @param id the identifier of the Unit to send the command to
+     * @param command the command to send to the given unit.
+     */
+    private void sendCommand(String id, Command command) {
+        unchecked(() -> bus.sink().accept(message(Command.class).withTarget(id).withPayload(command)));
+    }
+
 }
