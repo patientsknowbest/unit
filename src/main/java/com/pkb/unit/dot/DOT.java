@@ -12,6 +12,8 @@ import com.pkb.unit.tracker.Unit;
  * https://graphviz.gitlab.io/_pages/doc/info/lang.html
  */
 public class DOT {
+    private DOT() {}
+
     public static String toDOTFormat(SystemState systemState) {
         return systemState.units().stream()
                 .map(DOT::toDOTFormat)

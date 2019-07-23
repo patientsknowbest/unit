@@ -11,22 +11,25 @@ import io.reactivex.functions.Function;
 import io.reactivex.functions.Predicate;
 
 public class Filters {
-    public static <PT> Observable<Message> messages(Observable<Message> messages,
-                                               Class<PT> payloadType,
+
+    private Filters() {}
+
+    public static <T> Observable<Message> messages(Observable<Message> messages,
+                                               Class<T> payloadType,
                                                String target) {
         return messages.filter(payloadTypeFilter(payloadType))
                 .filter(targetFilter(target));
     }
 
-    public static <PT> Observable<PT> payloads(Observable<Message> messages,
-                                               Class<PT> payloadType,
-                                               String target) {
+    public static <T> Observable<T> payloads(Observable<Message> messages,
+                                             Class<T> payloadType,
+                                             String target) {
         return messages.filter(payloadTypeFilter(payloadType))
                 .filter(targetFilter(target))
                 .map(extractPayload());
     }
 
-    public static <PT> Observable<PT> payloads(Observable<Message> messages, Class<PT> payloadType) {
+    public static <T> Observable<T> payloads(Observable<Message> messages, Class<T> payloadType) {
         return messages.filter(payloadTypeFilter(payloadType))
                 .map(extractPayload());
     }

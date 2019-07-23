@@ -1,0 +1,8 @@
+/*com.pkb.unit.tracker.SystemStateTest.unitsAreSorted*/
+digraph { 
+A [label="id=A desiredState=optional[enabled] actualState=Optional[STARTING]"]
+A -> C
+B [label="id=B desiredState=optional[enabled] actualState=Optional[STARTING]"]
+B -> A
+C [label="id=C desiredState=optional[enabled] actualState=Optional[STARTED]"]
+}

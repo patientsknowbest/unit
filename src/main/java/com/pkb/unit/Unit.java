@@ -61,18 +61,6 @@ public abstract class Unit {
      */
     private final Bus bus;
 
-    /**
-     * If the unit is ENABLED or DISABLED, then the retryPeriod defines the frequency
-     * that it will try to return to the desired state.
-     */
-    private final long retryPeriod;
-
-    /**
-     * If the unit is ENABLED or DISABLED, then the retryPeriod defines the frequency
-     * that it will try to return to the desired state.
-     */
-    private final TimeUnit retryTimeUnit;
-
     private final List<CommandHandler> commandHandlers = List.of(
             new StartHandler(),
             new StopHandler(),
@@ -83,11 +71,16 @@ public abstract class Unit {
 
     private Map<String, Optional<State>> mandatoryDependencies = new ConcurrentHashMap<>();
 
+    /**
+     *
+     * @param id The string uniquely identifying this unit on the bus.
+     * @param bus the bus which this unit will communicate on
+     * @param retryPeriod the interval at which the desired state will be checked
+     * @param retryTimeUnit the interval time unit at which the desired state will be checked
+     */
     public Unit(String id, Bus bus, long retryPeriod, TimeUnit retryTimeUnit) {
         this.id = id;
         this.bus = bus;
-        this.retryPeriod = retryPeriod;
-        this.retryTimeUnit = retryTimeUnit;
 
         Filters.payloads(bus.events(), Command.class, id)
                 .observeOn(Schedulers.computation())
@@ -106,7 +99,7 @@ public abstract class Unit {
                 .subscribe(ignored -> handleReportDependencies());
 
         Observable.interval(retryPeriod, retryTimeUnit, Schedulers.computation())
-                .subscribe(this::handleRetry);
+                .subscribe(ignored -> handleRetry());
 
         // Advertise our full current state
         unchecked(() -> bus.sink().accept(message(NewUnit.class).withPayload(newUnit(id))));
@@ -114,7 +107,7 @@ public abstract class Unit {
         handleReportState();
     }
 
-    private void handleRetry(Long ignored) {
+    private void handleRetry() {
         if (desiredState == ENABLED && state != STARTED) {
             sendCommand(id, START);
         } else if (desiredState == DISABLED && state != STOPPED && state != FAILED) {
