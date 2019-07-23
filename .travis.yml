@@ -6,6 +6,7 @@ deploy:
   script: "mvn --settings .travis.settings.xml deploy"
   skip_cleanup: true
   on:
+    tags: true
     all_branches: true
 
 addons:

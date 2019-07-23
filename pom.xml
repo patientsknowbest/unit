@@ -4,17 +4,17 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 
     <profiles>
-        <!-- Use the current branch / tag as the version on CI -->
+        <!-- Use the current tag as the version on CI -->
         <profile>
             <id>ci-build</id>
             <activation>
                 <activeByDefault>false</activeByDefault>
                 <property>
-                    <name>env.TRAVIS_BRANCH</name>
+                    <name>env.TRAVIS_TAG</name>
                 </property>
             </activation>
             <properties>
-                <revision>${env.TRAVIS_BRANCH}</revision>
+                <revision>${env.TRAVIS_TAG}</revision>
             </properties>
         </profile>
     </profiles>
