@@ -99,7 +99,7 @@ public abstract class Unit {
                 .subscribe(ignored -> handleReportDependencies());
 
         Observable.interval(retryPeriod, retryTimeUnit, Schedulers.computation())
-                .subscribe((ignored) -> handleRetry());
+                .subscribe(ignored -> handleRetry());
 
         // Advertise our full current state
         unchecked(() -> bus.sink().accept(message(NewUnit.class).withPayload(newUnit(id))));
