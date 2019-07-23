@@ -24,6 +24,8 @@ import io.reactivex.Observable;
  * An Observable model of the system state, used for building dashboards and in tests.
  */
 public class Tracker {
+    private Tracker() {}
+
     /**
      * @param bus The bus containing units to be tracked
      * @return An observable which emits the current system state.
@@ -35,7 +37,7 @@ public class Tracker {
                 .scan(systemState().build(), Tracker::accumulate)
                 // Trigger at least one report of dependencies from each unit (allows the tracker to be added at
                 // any time)
-                .doOnSubscribe((disp) -> {
+                .doOnSubscribe(ignored -> {
                     unchecked(() -> bus.sink().accept(message(ReportStateRequest.class)));
                     unchecked(() -> bus.sink().accept(message(ReportDependenciesRequest.class)));
                 });
