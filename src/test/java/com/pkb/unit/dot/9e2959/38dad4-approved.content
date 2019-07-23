@@ -1,0 +1,6 @@
+/*com.pkb.unit.dot.DOTTest.testToDOTFormat*/
+digraph { 
+unit1 [label="id=unit1 desiredState=optional[enabled] actualState=Optional[STARTING]"]
+unit1 -> unit2
+unit2 [label="id=unit2 desiredState=optional[enabled] actualState=Optional[STARTED]"]
+}
