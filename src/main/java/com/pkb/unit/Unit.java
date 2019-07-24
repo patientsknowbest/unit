@@ -109,7 +109,8 @@ public abstract class Unit {
 
 
     /**
-     * @return true if this set did not already contain the specified element
+     * Adds a dependency to this unit.
+     * This unit can only start if all it's dependencies are started.
      */
     public void addDependency(String dependency) {
         mandatoryDependencies.put(dependency, Optional.empty());
@@ -122,7 +123,7 @@ public abstract class Unit {
     }
 
     /**
-     * @return true if this set contained the specified element
+     * Removes a dependency from this unit.
      */
     public void removeDependency(String dependency) {
         mandatoryDependencies.remove(dependency);
