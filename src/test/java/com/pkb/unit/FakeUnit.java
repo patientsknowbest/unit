@@ -20,7 +20,7 @@ class FakeUnit extends Unit {
     }
 
     @Override
-    HandleOutcome handleStart() {
+    protected HandleOutcome handleStart() {
         System.out.println(id() + " starting");
         try {
             cdlCompleteStart.await();
@@ -36,7 +36,7 @@ class FakeUnit extends Unit {
     }
 
     @Override
-    HandleOutcome handleStop() {
+    protected HandleOutcome handleStop() {
         System.out.println(id() + " stopping");
         try {
             cdlCompleteStop.await();

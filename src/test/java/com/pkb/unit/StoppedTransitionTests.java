@@ -1,10 +1,5 @@
 package com.pkb.unit;
 
-import static com.pkb.unit.Command.CLEAR_DESIRED_STATE;
-import static com.pkb.unit.Command.DISABLE;
-import static com.pkb.unit.Command.ENABLE;
-import static com.pkb.unit.Command.START;
-import static com.pkb.unit.Command.STOP;
 import static com.pkb.unit.DesiredState.DISABLED;
 import static com.pkb.unit.DesiredState.ENABLED;
 import static com.pkb.unit.DesiredState.UNSET;
@@ -28,7 +23,7 @@ public class StoppedTransitionTests extends AbstractUnitTest {
 
         // WHEN
         FakeUnit unit = new FakeUnit("unit1", bus);
-        bus.sink().accept(command("unit1", ENABLE));
+        unit.enable();
         testComputationScheduler.triggerActions();
 
         // THEN
@@ -59,7 +54,7 @@ public class StoppedTransitionTests extends AbstractUnitTest {
 
         // WHEN
         FakeUnit fakeUnit = new FakeUnit("unit1", bus);
-        bus.sink().accept(command("unit1", ENABLE));
+        fakeUnit.enable();
         fakeUnit.failStart();
         testComputationScheduler.triggerActions();
         testIOScheduler.triggerActions();
@@ -86,7 +81,7 @@ public class StoppedTransitionTests extends AbstractUnitTest {
 
         // WHEN
         FakeUnit unit = new FakeUnit("unit1", bus);
-        bus.sink().accept(command("unit1", DISABLE));
+        unit.disable();
         testComputationScheduler.triggerActions();
 
         // THEN
@@ -95,7 +90,7 @@ public class StoppedTransitionTests extends AbstractUnitTest {
                 .build());
 
         // WHEN
-        bus.sink().accept(command("unit1", START));
+        unit.start();
         testComputationScheduler.triggerActions();
 
         // THEN
@@ -113,7 +108,7 @@ public class StoppedTransitionTests extends AbstractUnitTest {
 
         // WHEN
         FakeUnit unit = new FakeUnit("unit1", bus);
-        bus.sink().accept(command("unit1", START));
+        unit.start();
         testComputationScheduler.triggerActions();
 
         // THEN
@@ -140,7 +135,7 @@ public class StoppedTransitionTests extends AbstractUnitTest {
 
         // WHEN
         FakeUnit unit = new FakeUnit("unit1", bus);
-        bus.sink().accept(command("unit1", START));
+        unit.start();
         testComputationScheduler.triggerActions();
 
         // THEN
@@ -166,7 +161,7 @@ public class StoppedTransitionTests extends AbstractUnitTest {
 
         // WHEN
         FakeUnit unit = new FakeUnit("unit1", bus);
-        bus.sink().accept(command("unit1", DISABLE));
+        unit.disable();
         testComputationScheduler.triggerActions();
 
         // THEN
@@ -183,8 +178,8 @@ public class StoppedTransitionTests extends AbstractUnitTest {
 
         // WHEN
         FakeUnit unit = new FakeUnit("unit1", bus);
-        bus.sink().accept(command("unit1", DISABLE));
-        bus.sink().accept(command("unit1", STOP));
+        unit.disable();
+        unit.stop();
         testComputationScheduler.triggerActions();
 
         // THEN
@@ -201,7 +196,7 @@ public class StoppedTransitionTests extends AbstractUnitTest {
 
         // WHEN
         FakeUnit unit = new FakeUnit("unit1", bus);
-        bus.sink().accept(command("unit1", STOP));
+        unit.stop();
         testComputationScheduler.triggerActions();
 
         // THEN
@@ -218,7 +213,7 @@ public class StoppedTransitionTests extends AbstractUnitTest {
 
         // WHEN
         FakeUnit unit = new FakeUnit("unit1", bus);
-        bus.sink().accept(command("unit1", CLEAR_DESIRED_STATE));
+        unit.clearDesiredState();
         testComputationScheduler.triggerActions();
 
         // THEN
@@ -236,7 +231,7 @@ public class StoppedTransitionTests extends AbstractUnitTest {
 
         // WHEN
         FakeUnit unit = new FakeUnit("unit1", bus);
-        bus.sink().accept(command("unit1", ENABLE));
+        unit.enable();
         testComputationScheduler.triggerActions();
 
         // THEN
@@ -245,7 +240,7 @@ public class StoppedTransitionTests extends AbstractUnitTest {
                 .build());
 
         // WHEN
-        bus.sink().accept(command("unit1", ENABLE));
+        unit.enable();
         unit.completeStart();
         testComputationScheduler.triggerActions();
         testIOScheduler.triggerActions();
@@ -265,7 +260,7 @@ public class StoppedTransitionTests extends AbstractUnitTest {
 
         // WHEN
         FakeUnit unit = new FakeUnit("unit1", bus);
-        bus.sink().accept(command("unit1", ENABLE));
+        unit.enable();
         testComputationScheduler.triggerActions();
 
         // THEN
@@ -274,7 +269,7 @@ public class StoppedTransitionTests extends AbstractUnitTest {
                 .build());
 
         // WHEN
-        bus.sink().accept(command("unit1", START));
+        unit.start();
         unit.completeStart();
         testComputationScheduler.triggerActions();
         testIOScheduler.triggerActions();
@@ -294,7 +289,7 @@ public class StoppedTransitionTests extends AbstractUnitTest {
 
         // WHEN
         FakeUnit unit = new FakeUnit("unit1", bus);
-        bus.sink().accept(command("unit1", ENABLE));
+        unit.enable();
         testComputationScheduler.triggerActions();
 
         // THEN
@@ -303,7 +298,7 @@ public class StoppedTransitionTests extends AbstractUnitTest {
                 .build());
 
         // WHEN
-        bus.sink().accept(command("unit1", DISABLE));
+        unit.disable();
         unit.completeStart();
         testComputationScheduler.triggerActions();
         testIOScheduler.triggerActions();
@@ -334,7 +329,7 @@ public class StoppedTransitionTests extends AbstractUnitTest {
 
         // WHEN
         FakeUnit unit = new FakeUnit("unit1", bus);
-        bus.sink().accept(command("unit1", ENABLE));
+        unit.enable();
         testComputationScheduler.triggerActions();
 
         // THEN
@@ -343,7 +338,7 @@ public class StoppedTransitionTests extends AbstractUnitTest {
                 .build());
 
         // WHEN
-        bus.sink().accept(command("unit1", STOP));
+        unit.stop();
         unit.completeStart();
         testComputationScheduler.triggerActions();
         testIOScheduler.triggerActions();
@@ -374,7 +369,7 @@ public class StoppedTransitionTests extends AbstractUnitTest {
 
         // WHEN
         FakeUnit unit = new FakeUnit("unit1", bus);
-        bus.sink().accept(command("unit1", ENABLE));
+        unit.enable();
         testComputationScheduler.triggerActions();
 
         // THEN
@@ -383,7 +378,7 @@ public class StoppedTransitionTests extends AbstractUnitTest {
                 .build());
 
         // WHEN
-        bus.sink().accept(command("unit1", CLEAR_DESIRED_STATE));
+        unit.clearDesiredState();
         unit.completeStart();
         testComputationScheduler.triggerActions();
         testIOScheduler.triggerActions();
@@ -403,7 +398,7 @@ public class StoppedTransitionTests extends AbstractUnitTest {
 
         // WHEN
         FakeUnit unit = new FakeUnit("unit1", bus);
-        bus.sink().accept(command("unit1", START));
+        unit.start();
         testComputationScheduler.triggerActions();
 
         // THEN
@@ -411,7 +406,7 @@ public class StoppedTransitionTests extends AbstractUnitTest {
                 .addUnits(unit("unit1").withState(STARTING).withDesiredState(UNSET))
                 .build());
         // WHEN
-        bus.sink().accept(command("unit1", ENABLE));
+        unit.enable();
         unit.completeStart();
         testComputationScheduler.triggerActions();
         testIOScheduler.triggerActions();
@@ -431,7 +426,7 @@ public class StoppedTransitionTests extends AbstractUnitTest {
 
         // WHEN
         FakeUnit unit = new FakeUnit("unit1", bus);
-        bus.sink().accept(command("unit1", START));
+        unit.start();
         testComputationScheduler.triggerActions();
 
         // THEN
@@ -439,7 +434,7 @@ public class StoppedTransitionTests extends AbstractUnitTest {
                 .addUnits(unit("unit1").withState(STARTING).withDesiredState(UNSET))
                 .build());
         // WHEN
-        bus.sink().accept(command("unit1", START));
+        unit.start();
         unit.completeStart();
         testComputationScheduler.triggerActions();
         testIOScheduler.triggerActions();
@@ -459,7 +454,7 @@ public class StoppedTransitionTests extends AbstractUnitTest {
 
         // WHEN
         FakeUnit unit = new FakeUnit("unit1", bus);
-        bus.sink().accept(command("unit1", START));
+        unit.start();
         testComputationScheduler.triggerActions();
 
         // THEN
@@ -467,7 +462,7 @@ public class StoppedTransitionTests extends AbstractUnitTest {
                 .addUnits(unit("unit1").withState(STARTING).withDesiredState(UNSET))
                 .build());
         // WHEN
-        bus.sink().accept(command("unit1", DISABLE));
+        unit.disable();
         unit.completeStart();
         unit.completeStop(); // STOP of DISABLE command will be ignored until START has been finished
         testComputationScheduler.triggerActions();
@@ -498,7 +493,7 @@ public class StoppedTransitionTests extends AbstractUnitTest {
 
         // WHEN
         FakeUnit unit1 = new FakeUnit("unit1", bus);
-        bus.sink().accept(command("unit1", START));
+        unit1.start();
         testComputationScheduler.triggerActions();
 
         // THEN
@@ -507,7 +502,7 @@ public class StoppedTransitionTests extends AbstractUnitTest {
                 .build());
 
         // WHEN
-        bus.sink().accept(command("unit1", STOP));
+        unit1.stop();
         unit1.completeStart();
         unit1.completeStop(); // will be ignored
         testComputationScheduler.triggerActions();
@@ -528,7 +523,7 @@ public class StoppedTransitionTests extends AbstractUnitTest {
 
         // WHEN
         FakeUnit unit1 = new FakeUnit("unit1", bus);
-        bus.sink().accept(command("unit1", START));
+        unit1.start();
         testComputationScheduler.triggerActions();
 
         // THEN
@@ -537,7 +532,7 @@ public class StoppedTransitionTests extends AbstractUnitTest {
                 .build());
 
         // WHEN
-        bus.sink().accept(command("unit1", CLEAR_DESIRED_STATE));
+        unit1.clearDesiredState();
         unit1.completeStart();
         testComputationScheduler.triggerActions();
         testIOScheduler.triggerActions();

@@ -2,7 +2,6 @@ package com.pkb.unit;
 
 import static com.github.karsaig.approvalcrest.MatcherAssert.assertThat;
 import static com.github.karsaig.approvalcrest.matcher.Matchers.sameBeanAs;
-import static com.pkb.unit.message.ImmutableMessage.message;
 import static java.util.stream.Collectors.joining;
 
 import java.util.ArrayList;
@@ -15,7 +14,6 @@ import org.junit.rules.TestWatcher;
 import org.junit.runner.Description;
 
 import com.pkb.unit.dot.DOT;
-import com.pkb.unit.message.Message;
 import com.pkb.unit.tracker.SystemState;
 import com.pkb.unit.tracker.Tracker;
 
@@ -77,11 +75,5 @@ public class AbstractUnitTest {
     protected void setupIOTestScheduler() {
         testIOScheduler = new TestScheduler();
         RxJavaPlugins.setIoSchedulerHandler(i -> testIOScheduler);
-    }
-
-    protected Message<Command> command(String targetUnitId, Command start) {
-        return message(Command.class)
-                .withTarget(targetUnitId)
-                .withPayload(start);
     }
 }
