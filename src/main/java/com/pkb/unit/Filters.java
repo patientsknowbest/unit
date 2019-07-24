@@ -10,10 +10,22 @@ import io.reactivex.Observable;
 import io.reactivex.functions.Function;
 import io.reactivex.functions.Predicate;
 
+/**
+ * A set of commonly used filters on Observable streams of {@link Message}s.
+ */
 public class Filters {
 
     private Filters() {}
 
+    /**
+     * Filters the Observable stream of messages that have the given payload type, target recepient
+     * and returns the filtered stream of messages.
+     * @param messages the Observable stream to filter
+     * @param payloadType the payload type to filter by that is included in the message
+     * @param target the identifier of the unit this message should be processed by
+     * @param <T> the type of the payload this message carries
+     * @return the Observable stream conatining messages filtered by the give parameters
+     */
     public static <T> Observable<Message> messages(Observable<Message> messages,
                                                Class<T> payloadType,
                                                String target) {
@@ -21,6 +33,15 @@ public class Filters {
                 .filter(targetFilter(target));
     }
 
+    /**
+     * Filters the Observable stream of messages that have the given payload type, target recepient
+     * and returns the filtered stream of payload.
+     * @param messages the Observable stream to filter
+     * @param payloadType the payload type to filter by that is included in the message
+     * @param target the identifier of the unit this message should be processed by
+     * @param <T> the type of the payload this message carries
+     * @return the Observable stream conatining payloads filtered by the given parameters
+     */
     public static <T> Observable<T> payloads(Observable<Message> messages,
                                              Class<T> payloadType,
                                              String target) {
@@ -29,7 +50,16 @@ public class Filters {
                 .map(extractPayload());
     }
 
-    public static <T> Observable<T> payloads(Observable<Message> messages, Class<T> payloadType) {
+    /**
+     * Filters the Observable stream of messages that have the given payload type, target recepient
+     * and returns the filtered stream of payload.
+     * @param messages the Observable stream to filter
+     * @param payloadType the payload type to filter by that is included in the message
+     * @param <T> the type of the payload this message carries
+     * @return the Observable stream conatining payloads filtered by the given parameters
+     */
+    public static <T> Observable<T> payloads(Observable<Message> messages,
+                                             Class<T> payloadType) {
         return messages.filter(payloadTypeFilter(payloadType))
                 .map(extractPayload());
     }
