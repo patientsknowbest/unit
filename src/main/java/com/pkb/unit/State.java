@@ -1,7 +1,7 @@
 package com.pkb.unit;
 
 /**
- * Possible status a unit can be in.
+ * Possible states a unit can be in.
  */
 public enum State {
     /**
@@ -11,7 +11,7 @@ public enum State {
     FAILED,
 
     /**
-     * Stopped state indicates that the unit is not working but
+     * Stopped state indicates that the unit is not running but
      * can be started.
      */
     STOPPED,

@@ -37,9 +37,11 @@ import io.reactivex.schedulers.Schedulers;
 import io.vavr.collection.List;
 
 /**
- * A Unit is a base class for a restartable, stoppable service that can have depencencies and
- * that other Unitscan depend on. When a Unit is started then it tries the start its dependencies.
- * Once all of its dependencies has been started it starts itself.
+ * A Unit is a base class for a restartable, stoppable service that can have dependencies and
+ * that other Units can depend on. When a Unit is started then it tries to start its dependencies.
+ * Once all of its dependencies have been started it starts itself. A unit may also have a
+ * desired state (enabled or disabled), in which case it will try periodically to return
+ * to the started (or stopped) state.
  */
 public abstract class Unit {
     /**
@@ -195,8 +197,8 @@ public abstract class Unit {
 
     /**
      * Checks if the unit is in its desired state and sends the appropriate {@link Command}
-     * to itself to try to get into it. E.g. if the Unit's desired state is {@link DesiredState}
-     * but the unit is in FAILED state then it sends START to itself.
+     * to itself to try to return to that desired state. E.g. if the Unit's desired state is
+     * {@link DesiredState#ENABLED} but the unit is in FAILED state then it sends START to itself.
      */
     private void handleRetry() {
         if (desiredState == ENABLED && state != STARTED) {
@@ -223,7 +225,7 @@ public abstract class Unit {
 
     /**
      * Called every time a unit sends a transition event to the bus. If the transitioning
-     * unit is a dependency of this unit then it start or stops itself upon certain conditions.
+     * unit is a dependency of this unit then it starts or stops itself upon certain conditions.
      * @param transition the event that was sent to the bus
      */
     private void handleDependencyTransition(Transition transition) {
@@ -248,7 +250,7 @@ public abstract class Unit {
 
     /**
      * Searches for an appropriate {@link CommandHandler} to pass the command to. If no command
-     * handler found that can process the given command then it publishes current state of
+     * handler is found that can process the given command then it publishes current state of
      * the Unit with a comment and returns without further operation.
      * @param command the command the method searches handler for and passes to
      */
@@ -271,7 +273,7 @@ public abstract class Unit {
 
     /**
      * Handles {@link Command#ENABLE} via setting the desired state of the Unit and sending
-     * START command to the Unit if it is not in STARTED state.
+     * START command to the Unit if it is not in STARTED state yet.
      */
     private class EnableHandler implements CommandHandler {
         @Override
@@ -293,7 +295,7 @@ public abstract class Unit {
 
     /**
      * Handles {@link Command#DISABLE} via setting the desired state of the Unit and sending
-     * STOP command to the Unit if it is not in STOPPED state.
+     * STOP command to the Unit if it is not in STOPPED state yet.
      */
     private class DisableHandler implements CommandHandler {
         @Override
@@ -315,7 +317,7 @@ public abstract class Unit {
 
     /**
      * Handles {@link Command#START} after it checks if the Unit is eligible for transitioning to
-     * STARTED state. The actual startup logic, that is implemnted by the clients, is run on an IO
+     * STARTED state. The actual startup logic, that is implemented by the clients, is run on an IO
      * thread.
      */
     private class StartHandler implements CommandHandler {
@@ -363,7 +365,7 @@ public abstract class Unit {
 
     /**
      * Handles {@link Command#STOP} after it checks if the Unit is eligible for transitioning to
-     * STOPPED state. The actual stop logic, that is implemnted by the clients, is run on an IO
+     * STOPPED state. The actual stop logic, that is implemented by the clients, is run on an IO
      * thread. This handler also tries to START the Unit if it is in ENABLED state.
      */
     private class StopHandler implements CommandHandler {

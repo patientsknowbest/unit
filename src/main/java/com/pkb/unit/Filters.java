@@ -24,7 +24,7 @@ public class Filters {
      * @param payloadType the payload type to filter by that is included in the message
      * @param target the identifier of the unit this message should be processed by
      * @param <T> the type of the payload this message carries
-     * @return the Observable stream conatining messages filtered by the give parameters
+     * @return the Observable stream containing messages filtered by the give parameters
      */
     public static <T> Observable<Message> messages(Observable<Message> messages,
                                                Class<T> payloadType,
@@ -40,7 +40,7 @@ public class Filters {
      * @param payloadType the payload type to filter by that is included in the message
      * @param target the identifier of the unit this message should be processed by
      * @param <T> the type of the payload this message carries
-     * @return the Observable stream conatining payloads filtered by the given parameters
+     * @return the Observable stream containing payloads filtered by the given parameters
      */
     public static <T> Observable<T> payloads(Observable<Message> messages,
                                              Class<T> payloadType,

@@ -9,7 +9,7 @@ import io.reactivex.functions.Consumer;
 
 /**
  * An implementation of the {@link Bus} interface that serves as the main
- * communicatin channel for units.
+ * communication channel for units.
  */
 public class LocalBus implements Bus {
     private PublishRelay<Message> events = PublishRelay.create();
@@ -22,7 +22,7 @@ public class LocalBus implements Bus {
     }
 
     /**
-     * @return the event bus to subscibe on where messages are transmitted
+     * @return the event bus to subscribe on where messages are transmitted
      */
     @Override
     public Observable<Message> events() {
