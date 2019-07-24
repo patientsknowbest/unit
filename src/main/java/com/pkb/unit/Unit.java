@@ -242,7 +242,8 @@ public abstract class Unit {
     }
 
     /**
-     * @return true when all the units are in STARTED state which this unit depends on. False otherwise.
+     * @return true when all the units, which this unit depends on, are in STARTED state.
+     * False otherwise.
      */
     private boolean allDepsHaveStarted() {
         return mandatoryDependencies.values().stream().allMatch(s -> s.isPresent() && s.get() == STARTED);
@@ -250,7 +251,7 @@ public abstract class Unit {
 
     /**
      * Searches for an appropriate {@link CommandHandler} to pass the command to. If no command
-     * handler is found that can process the given command then it publishes current state of
+     * handler that can process the given command was found then it publishes current state of
      * the Unit with a comment and returns without further operation.
      * @param command the command the method searches handler for and passes to
      */
@@ -263,7 +264,7 @@ public abstract class Unit {
     }
 
     /**
-     * Handles {@link Command}s based on the implementation of its implementors.
+     * Handles {@link Command}s based on the implementation of its clients.
      */
     private interface CommandHandler {
         boolean handles(Command c);
@@ -550,7 +551,7 @@ public abstract class Unit {
     }
 
     /**
-     * Sends a Command the the given Unit through the {@link Bus}
+     * Sends a Command to the given Unit through the {@link Bus}
      * @param id the identifier of the Unit to send the command to
      * @param command the command to send to the given unit.
      */

@@ -29,7 +29,7 @@ public enum State {
 
     /**
      * Starting state indicates that the unit is about to start.
-     * Usually it is waiting for the units to be started it depends on.
+     * Usually it is waiting for the units to have started it depends on.
      */
     STARTING
 }

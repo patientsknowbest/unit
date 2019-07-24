@@ -9,14 +9,14 @@ import com.pkb.unit.tracker.Unit;
 
 /**
  * Class for transforming the current state of the system into a DOT format graph
- * https://graphviz.gitlab.io/_pages/doc/info/lang.html
+ * See <a href="https://graphviz.gitlab.io/_pages/doc/info/lang.html">the DOT language</a>
  */
 public class DOT {
     private DOT() {}
 
     /**
      * Converts the given {@link SystemState} into a DOT format graph.
-     * @see <a href="https://graphviz.gitlab.io/_pages/doc/info/lang.html" a>DOT language</a>
+     * @see <a href="https://graphviz.gitlab.io/_pages/doc/info/lang.html">DOT language</a>
      *
      * @param systemState the current system state to convert
      * @return the DOT format graph reprensenting the given system state
