@@ -1,10 +1,5 @@
 package com.pkb.unit;
 
-import static com.pkb.unit.Command.CLEAR_DESIRED_STATE;
-import static com.pkb.unit.Command.DISABLE;
-import static com.pkb.unit.Command.ENABLE;
-import static com.pkb.unit.Command.START;
-import static com.pkb.unit.Command.STOP;
 import static com.pkb.unit.DesiredState.DISABLED;
 import static com.pkb.unit.DesiredState.ENABLED;
 import static com.pkb.unit.DesiredState.UNSET;
@@ -439,7 +434,7 @@ public class DependencyTests extends AbstractUnitTest {
         FakeUnit unit1 = new FakeUnit("unit1", bus);
         FakeUnit unit2 = new FakeUnit("unit2", bus);
         unit1.addDependency("unit2");
-        bus.sink().accept(command("unit1", ENABLE));
+        unit1.enable();
         testComputationScheduler.triggerActions();
 
         // THEN
@@ -457,7 +452,7 @@ public class DependencyTests extends AbstractUnitTest {
         FakeUnit unit1 = new FakeUnit("unit1", bus);
         FakeUnit unit2 = new FakeUnit("unit2", bus);
         unit1.addDependency("unit2");
-        bus.sink().accept(command("unit1", ENABLE));
+        unit1.enable();
         unit2.completeStart();
         unit1.completeStart();
         testScheduler.triggerActions();
@@ -477,7 +472,7 @@ public class DependencyTests extends AbstractUnitTest {
         FakeUnit unit1 = new FakeUnit("unit1", bus);
         FakeUnit unit2 = new FakeUnit("unit2", bus);
         unit1.addDependency("unit2");
-        bus.sink().accept(command("unit1", START));
+        unit1.start();
         unit2.completeStart();
         unit1.completeStart();
 
@@ -489,7 +484,7 @@ public class DependencyTests extends AbstractUnitTest {
                 unit("unit2").withDesiredState(UNSET).withState(STARTED)).build());
 
         // WHEN
-        bus.sink().accept(command("unit2", STOP));
+        unit2.stop();
         unit2.completeStop();
         unit1.completeStop();
         testScheduler.triggerActions();
@@ -500,7 +495,7 @@ public class DependencyTests extends AbstractUnitTest {
                 unit("unit2").withDesiredState(UNSET).withState(STOPPED)).build());
 
         // WHEN
-        bus.sink().accept(command("unit2", STOP));
+        unit2.stop();
         testScheduler.triggerActions();
 
         // THEN
@@ -518,8 +513,8 @@ public class DependencyTests extends AbstractUnitTest {
         // WHEN
         FakeUnit unit1 = new FakeUnit("unit1", bus);
         FakeUnit unit2 = new FakeUnit("unit2", bus);
-        bus.sink().accept(command("unit1", START));
-        bus.sink().accept(command("unit2", START));
+        unit1.start();
+        unit2.start();
         unit1.failStart();
         unit2.failStart();
         testScheduler.triggerActions();
@@ -542,7 +537,7 @@ public class DependencyTests extends AbstractUnitTest {
         FakeUnit unit1 = new FakeUnit("unit1", bus);
         FakeUnit unit2 = new FakeUnit("unit2", bus);
         unit1.addDependency("unit2");
-        bus.sink().accept(command("unit1", ENABLE));
+        unit1.enable();
         unit1.failStart();
         unit2.completeStart();
         testScheduler.triggerActions();
@@ -563,7 +558,7 @@ public class DependencyTests extends AbstractUnitTest {
         FakeUnit unit1 = new FakeUnit("unit1", bus);
         FakeUnit unit2 = new FakeUnit("unit2", bus);
         unit1.addDependency("unit2");
-        bus.sink().accept(command("unit1", START));
+        unit1.start();
         unit2.failStart();
         unit1.completeStart();
         testScheduler.triggerActions();
@@ -586,7 +581,7 @@ public class DependencyTests extends AbstractUnitTest {
         FakeUnit unit3 = new FakeUnit("unit3", bus);
         unit1.addDependency("unit2");
         unit1.addDependency("unit3");
-        bus.sink().accept(command("unit1", START));
+        unit1.start();
         unit2.failStart();
         unit3.completeStart();
 
@@ -612,7 +607,7 @@ public class DependencyTests extends AbstractUnitTest {
         FakeUnit unit3 = new FakeUnit("unit3", bus);
         unit1.addDependency("unit2");
         unit2.addDependency("unit3");
-        bus.sink().accept(command("unit1", START));
+        unit1.start();
         unit3.failStart();
         testScheduler.triggerActions();
 
@@ -632,7 +627,7 @@ public class DependencyTests extends AbstractUnitTest {
 
         // WHEN
         FakeUnit unit1 = new FakeUnit("unit1", bus);
-        bus.sink().accept(command("unit1", START));
+        unit1.start();
         unit1.completeStart();
         testScheduler.triggerActions();
 
@@ -642,7 +637,7 @@ public class DependencyTests extends AbstractUnitTest {
         ).build());
 
         // WHEN
-        bus.sink().accept(command("unit1", STOP));
+        unit1.stop();
         unit1.failStop();
         testScheduler.triggerActions();
 
@@ -661,8 +656,8 @@ public class DependencyTests extends AbstractUnitTest {
         // WHEN
         FakeUnit unit1 = new FakeUnit("unit1", bus);
         FakeUnit unit2 = new FakeUnit("unit2", bus);
-        bus.sink().accept(command("unit1", START));
-        bus.sink().accept(command("unit2", START));
+        unit1.start();
+        unit2.start();
         unit1.completeStart();
         unit2.completeStart();
         testScheduler.triggerActions();
@@ -674,8 +669,8 @@ public class DependencyTests extends AbstractUnitTest {
         ).build());
 
         // WHEN
-        bus.sink().accept(command("unit1", STOP));
-        bus.sink().accept(command("unit2", STOP));
+        unit1.stop();
+        unit2.stop();
         unit1.failStop();
         unit2.failStop();
         testScheduler.triggerActions();
@@ -696,7 +691,7 @@ public class DependencyTests extends AbstractUnitTest {
         FakeUnit unit1 = new FakeUnit("unit1", bus);
         FakeUnit unit2 = new FakeUnit("unit2", bus);
         unit1.addDependency("unit2");
-        bus.sink().accept(command("unit1", START));
+        unit1.start();
         unit1.completeStart();
         unit2.completeStart();
         testScheduler.triggerActions();
@@ -708,7 +703,7 @@ public class DependencyTests extends AbstractUnitTest {
         ).build());
 
         // WHEN
-        bus.sink().accept(command("unit2", STOP));
+        unit2.stop();
         unit2.failStop();
         unit1.completeStop();
         testScheduler.triggerActions();
@@ -731,7 +726,7 @@ public class DependencyTests extends AbstractUnitTest {
         FakeUnit unit3 = new FakeUnit("unit3", bus);
         unit1.addDependency("unit2");
         unit2.addDependency("unit3");
-        bus.sink().accept(command("unit1", START));
+        unit1.start();
         unit3.completeStart();
         unit2.completeStart();
         unit1.completeStart();
@@ -745,7 +740,7 @@ public class DependencyTests extends AbstractUnitTest {
         ).build());
 
         // WHEN
-        bus.sink().accept(command("unit3", STOP));
+        unit3.stop();
         unit3.failStop();
         unit2.completeStop();
         unit1.completeStop();
@@ -768,7 +763,7 @@ public class DependencyTests extends AbstractUnitTest {
         FakeUnit unit1 = new FakeUnit("unit1", bus);
         FakeUnit unit2 = new FakeUnit("unit2", bus);
         unit1.addDependency("unit2");
-        bus.sink().accept(command("unit1", ENABLE));
+        unit1.enable();
         unit1.completeStart();
         unit2.completeStart();
         testScheduler.triggerActions();
@@ -780,7 +775,7 @@ public class DependencyTests extends AbstractUnitTest {
         ).build());
 
         // WHEN
-        bus.sink().accept(command("unit2", DISABLE));
+        unit2.disable();
         unit2.completeStop();
         unit1.completeStop();
         testScheduler.triggerActions();
@@ -792,7 +787,7 @@ public class DependencyTests extends AbstractUnitTest {
         ).build());
 
         // WHEN
-        bus.sink().accept(command("unit2", CLEAR_DESIRED_STATE));
+        unit2.clearDesiredState();
         unit1.completeStart();
         unit2.completeStart();
         testScheduler.advanceTimeBy(FakeUnit.RETRY_PERIOD, FakeUnit.RETRY_PERIOD_UNIT);

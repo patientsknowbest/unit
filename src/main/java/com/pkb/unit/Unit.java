@@ -107,6 +107,84 @@ public abstract class Unit {
         handleReportState();
     }
 
+
+    /**
+     * @return true if this set did not already contain the specified element
+     */
+    public void addDependency(String dependency) {
+        mandatoryDependencies.put(dependency, Optional.empty());
+
+        // Publish our new list of dependencies
+        handleReportDependencies();
+
+        // Prompt the dependency to report it's state
+        unchecked(() -> bus.sink().accept(message(ReportStateRequest.class).withTarget(dependency)));
+    }
+
+    /**
+     * @return true if this set contained the specified element
+     */
+    public void removeDependency(String dependency) {
+        mandatoryDependencies.remove(dependency);
+        // Publish our new list of dependencies
+        handleReportDependencies();
+    }
+
+    /**
+     * Enable this unit
+     */
+    public void enable() {
+        sendCommand(id, ENABLE);
+    }
+
+    /**
+     * Disable this unit
+     */
+    public void disable() {
+        sendCommand(id, DISABLE);
+    }
+
+    /**
+     * Clear the desired state (so this unit is neither enabled or disabled)
+     */
+    public void clearDesiredState() {
+        sendCommand(id, CLEAR_DESIRED_STATE);
+    }
+
+    /**
+     * Starts the unit.
+     * Note that unless the unit is ENABLED, it will not retry in case
+     * it is stopped or it fails
+     */
+    public void start() {
+        sendCommand(id, START);
+    }
+
+    /**
+     * Stops the unit.
+     * Note that unless the unit is DISABLED, it may be started again
+     * at any time.
+     */
+    public void stop() {
+        sendCommand(id, STOP);
+    }
+
+    /**
+     * Access the ID of this unit
+     * @return the unique identifier for the unit
+     */
+    protected String id() {
+        return id;
+    }
+
+    /**
+     * Access the current state of this unit
+     * @return the current state of the unit.
+     */
+    protected State state() {
+        return state;
+    }
+
     private void handleRetry() {
         if (desiredState == ENABLED && state != STARTED) {
             sendCommand(id, START);
@@ -139,30 +217,6 @@ public abstract class Unit {
 
     private boolean allDepsHaveStarted() {
         return mandatoryDependencies.values().stream().allMatch(s -> s.isPresent() && s.get() == STARTED);
-    }
-
-    /**
-     * @return true if this set did not already contain the specified element
-     */
-    public Optional<State> addDependency(String dependency) {
-        Optional<State> ret = mandatoryDependencies.put(dependency, Optional.empty());
-
-        // Publish our new list of dependencies
-        handleReportDependencies();
-
-        // Prompt the dependency to report it's state
-        unchecked(() -> bus.sink().accept(message(ReportStateRequest.class).withTarget(dependency)));
-
-        return ret;
-    }
-
-    /**
-     * @return true if this set contained the specified element
-     */
-    public void removeDependency(String dependency) {
-        mandatoryDependencies.remove(dependency);
-        // Publish our new list of dependencies
-        handleReportDependencies();
     }
 
     private synchronized void handle(Command command) {
@@ -330,9 +384,9 @@ public abstract class Unit {
         SUCCESS, FAILURE
     }
 
-    abstract HandleOutcome handleStart();
+    protected abstract HandleOutcome handleStart();
 
-    abstract HandleOutcome handleStop();
+    protected abstract HandleOutcome handleStop();
 
     /**
      * Implementations may call this to inform the system that they have failed and that dependents should
@@ -350,10 +404,6 @@ public abstract class Unit {
 
     private void sendCommand(String id, Command command) {
         unchecked(() -> bus.sink().accept(message(Command.class).withTarget(id).withPayload(command)));
-    }
-
-    String id() {
-        return id;
     }
 
     private class ClearDesiredStateHandler implements CommandHandler {
