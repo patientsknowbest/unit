@@ -110,7 +110,7 @@ public abstract class Unit {
 
     /**
      * Adds a dependency to this unit.
-     * This unit can only start if all it's dependencies are started.
+     * This unit can only start if all its dependencies are started.
      */
     public void addDependency(String dependency) {
         mandatoryDependencies.put(dependency, Optional.empty());
@@ -118,7 +118,7 @@ public abstract class Unit {
         // Publish our new list of dependencies
         handleReportDependencies();
 
-        // Prompt the dependency to report it's state
+        // Prompt the dependency to report its state
         unchecked(() -> bus.sink().accept(message(ReportStateRequest.class).withTarget(dependency)));
     }
 
