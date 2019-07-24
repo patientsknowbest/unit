@@ -9,11 +9,21 @@ import org.immutables.value.Value;
 
 import com.google.common.collect.Comparators;
 
+/**
+ * Keeps track of the whole system, the units and their states.
+ */
 @Value.Immutable
 @Value.Style(builder = "systemState")
 public interface SystemState {
+
+    /**
+     * @return all the units that exist in the system
+     */
     List<Unit> units();
 
+    /**
+     * @return the ordered version of SystemState
+     */
     @Value.Check
     default SystemState normalize() {
         io.vavr.collection.List<Unit> units = io.vavr.collection.List.ofAll(units());

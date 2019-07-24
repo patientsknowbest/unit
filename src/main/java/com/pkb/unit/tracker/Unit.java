@@ -13,6 +13,9 @@ import com.pkb.unit.State;
 
 import com.google.common.collect.Comparators;
 
+/**
+ * A non-functional copy of real units for testing and visual representation.
+ */
 @Value.Immutable
 @Value.Style(of = "unit")
 public interface Unit {
