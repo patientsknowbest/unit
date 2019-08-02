@@ -6,7 +6,7 @@ import java.util.concurrent.TimeUnit;
 /**
  * A fake
  */
-class FakeUnit extends Unit {
+public class FakeUnit extends Unit {
     public static long RETRY_PERIOD = 1;
     public static TimeUnit RETRY_PERIOD_UNIT = TimeUnit.SECONDS;
 

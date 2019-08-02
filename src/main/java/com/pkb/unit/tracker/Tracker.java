@@ -1,5 +1,8 @@
 package com.pkb.unit.tracker;
 
+import static com.pkb.unit.Filters.payloads;
+import static com.pkb.unit.State.STARTED;
+import static com.pkb.unit.State.STOPPED;
 import static com.pkb.unit.Unchecked.unchecked;
 import static com.pkb.unit.message.ImmutableMessage.message;
 import static com.pkb.unit.tracker.ImmutableSystemState.systemState;
@@ -18,6 +21,9 @@ import com.pkb.unit.message.payload.ReportStateRequest;
 import com.pkb.unit.message.payload.Transition;
 
 import io.reactivex.Observable;
+import io.reactivex.ObservableSource;
+import io.reactivex.Observer;
+import io.reactivex.disposables.Disposable;
 
 /**
  * Tracker
@@ -25,6 +31,51 @@ import io.reactivex.Observable;
  */
 public class Tracker {
     private Tracker() {}
+
+    private static class RestartTracker implements ObservableSource<Boolean> {
+        private boolean hasStopped;
+        private boolean hasStarted;
+
+        private Disposable disposable;
+
+        private Observer<? super Boolean> observer;
+
+        RestartTracker(Bus bus, String id) {
+            hasStopped = false;
+            hasStarted = false;
+            disposable = payloads(bus.events(), Transition.class, id)
+                    .subscribe(this::onTransition);
+        }
+
+        private void onTransition(Transition x) {
+            if (!hasStopped && x.current() == STOPPED) {
+                hasStopped = true;
+            } else if (hasStopped && x.current() == STARTED) {
+                hasStarted = true;
+                disposable.dispose();
+                observer.onNext(true);
+                observer.onComplete();
+            }
+        }
+
+        @Override
+        public void subscribe(Observer<? super Boolean> observer) {
+            this.observer = observer;
+            observer.onSubscribe(disposable);
+        }
+    }
+
+    /**
+     * Creates an observable that emits 'true' when a given unit has transitioned from
+     * started -> stopped -> started. This can be useful to ensure that a restart
+     * has taken place when desired, and that the unit has returned to an available state.
+     * @param bus the bus to observe for events
+     * @param id the ID of the unit to be observed for a restart
+     * @return An observable, which emits true & completes when the desired unit has restarted.
+     */
+    public static Observable<Boolean> unitRestarted(Bus bus, String id) {
+        return Observable.wrap(new RestartTracker(bus, id));
+    }
 
     /**
      * @param bus The bus containing units to be tracked
