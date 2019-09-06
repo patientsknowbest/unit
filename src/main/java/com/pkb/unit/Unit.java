@@ -15,22 +15,15 @@ import static com.pkb.unit.State.STARTING;
 import static com.pkb.unit.State.STOPPED;
 import static com.pkb.unit.State.STOPPING;
 import static com.pkb.unit.Unchecked.unchecked;
-import static com.pkb.unit.message.ImmutableMessage.message;
-import static com.pkb.unit.message.payload.ImmutableDependencies.dependencies;
-import static com.pkb.unit.message.payload.ImmutableNewUnit.newUnit;
-import static com.pkb.unit.message.payload.ImmutableTransition.transition;
 
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 
-import com.pkb.unit.message.Message;
-import com.pkb.unit.message.payload.Dependencies;
-import com.pkb.unit.message.payload.NewUnit;
-import com.pkb.unit.message.payload.ReportDependenciesRequest;
-import com.pkb.unit.message.payload.ReportStateRequest;
-import com.pkb.unit.message.payload.Transition;
+import javax.annotation.Nullable;
+
+import com.google.common.collect.ImmutableList;
 
 import io.reactivex.Observable;
 import io.reactivex.schedulers.Schedulers;
@@ -79,7 +72,7 @@ public abstract class Unit {
      * This map is used to specify if all the dependencies have been started so that this Unit
      * is eligible for starting as well.
      */
-    private Map<String, Optional<State>> mandatoryDependencies = new ConcurrentHashMap<>();
+    private Map<CharSequence, Optional<State>> mandatoryDependencies = new ConcurrentHashMap<>();
 
     /**
      *
@@ -112,7 +105,7 @@ public abstract class Unit {
                 .subscribe(consumer(this::handleRetry));
 
         // Advertise our full current state
-        unchecked(() -> bus.sink().accept(message(NewUnit.class).withPayload(newUnit(id))));
+        unchecked(() -> bus.sink().accept(message(null, NewUnit.newBuilder().setId(id).build())));
         handleReportDependencies();
         handleReportState();
     }
@@ -128,7 +121,7 @@ public abstract class Unit {
         handleReportDependencies();
 
         // Prompt the dependency to report its state
-        unchecked(() -> bus.sink().accept(message(ReportStateRequest.class).withTarget(dependency)));
+        unchecked(() -> bus.sink().accept(message(dependency, new ReportStateRequest())));
     }
 
     /**
@@ -213,7 +206,10 @@ public abstract class Unit {
      */
     private void handleReportDependencies() {
         unchecked(() ->
-            bus.sink().accept(message(Dependencies.class).withPayload(dependencies(id, mandatoryDependencies.keySet()))));
+            bus.sink().accept(message(null, Dependencies.newBuilder()
+                    .setUnitId(id)
+                    .setDependencies(ImmutableList.copyOf(mandatoryDependencies.keySet()))
+                    .build())));
     }
 
     /**
@@ -229,14 +225,14 @@ public abstract class Unit {
      * @param transition the event that was sent to the bus
      */
     private void handleDependencyTransition(Transition transition) {
-        if (!mandatoryDependencies.containsKey(transition.unitId())) {
+        if (!mandatoryDependencies.containsKey(transition.getUnitId())) {
             return;
         }
-        mandatoryDependencies.put(transition.unitId(), Optional.of(transition.current()));
-        if (transition.previous() != STARTED && allDepsHaveStarted()) {
+        mandatoryDependencies.put(transition.getUnitId(), Optional.of(transition.getCurrent()));
+        if (transition.getPrevious() != STARTED && allDepsHaveStarted()) {
             sendCommand(id, START);
         }
-        if (transition.previous() == STARTED && transition.current() != STARTED) {
+        if (transition.getPrevious() == STARTED && transition.getCurrent() != STARTED) {
             sendCommand(id, STOP);
         }
     }
@@ -545,9 +541,15 @@ public abstract class Unit {
      *                changed.
      * @return the compiled Message that can be sent to the Bus
      */
-    private Message<Transition> makeTransitionEvent(State previous, DesiredState previousDesired, String comment) {
-        return message(Transition.class)
-                .withPayload(transition(id, state, previous, desiredState, previousDesired, Optional.of(comment)));
+    private Message makeTransitionEvent(State previous, DesiredState previousDesired, String comment) {
+        return message(null, Transition.newBuilder()
+                .setUnitId(id)
+                .setCurrent(state)
+                .setPrevious(previous)
+                .setCurrentDesired(desiredState)
+                .setPreviousDesired(previousDesired)
+                .setComment(comment)
+                .build());
     }
 
     /**
@@ -555,8 +557,15 @@ public abstract class Unit {
      * @param id the identifier of the Unit to send the command to
      * @param command the command to send to the given unit.
      */
-    private void sendCommand(String id, Command command) {
-        unchecked(() -> bus.sink().accept(message(Command.class).withTarget(id).withPayload(command)));
+    private void sendCommand(CharSequence id, Command command) {
+        unchecked(() -> bus.sink().accept(message(id, command)));
+    }
+
+    private <T> Message message(@Nullable CharSequence target, T payload) {
+        return Message.newBuilder()
+                .setTarget(target)
+                .setPayload(payload)
+                .build();
     }
 
 }

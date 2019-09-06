@@ -1,0 +1,47 @@
+@namespace("com.pkb.unit")
+protocol MyProtocol {
+  enum State {
+    FAILED,
+    STOPPED,
+    STOPPING,
+    STARTED,
+    STARTING
+  }
+
+  enum DesiredState {
+    ENABLED,
+    DISABLED,
+    UNSET
+  }
+
+  enum Command {
+    START, STOP, ENABLE, DISABLE, CLEAR_DESIRED_STATE
+  }
+
+  record Transition {
+    string unitId;
+    State current;
+    State previous;
+    DesiredState currentDesired;
+    DesiredState previousDesired;
+    union {null, string} comment;
+  }
+
+  record Dependencies {
+    string unitId;
+    array<string> dependencies;
+  }
+
+  record NewUnit {
+    string id;
+  }
+
+  record ReportStateRequest {}
+
+  record ReportDependenciesRequest {}
+
+  record Message {
+    union {string, null} target;
+    union {Command, Transition, Dependencies, NewUnit, ReportStateRequest, ReportDependenciesRequest} payload;
+  }
+}

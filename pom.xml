@@ -19,7 +19,6 @@
         </profile>
     </profiles>
 
-
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.pkb</groupId>
     <artifactId>unit</artifactId>
@@ -33,6 +32,7 @@
         <approvalcrest.version>0.21</approvalcrest.version>
         <guava.version>28.0-jre</guava.version>
         <revision>0.0.0-SNAPSHOT</revision>
+        <avro.version>1.9.1</avro.version>
     </properties>
     <dependencies>
         <dependency>
@@ -40,6 +40,11 @@
             <artifactId>value</artifactId>
             <version>${immutables.version}</version>
             <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.avro</groupId>
+            <artifactId>avro</artifactId>
+            <version>${avro.version}</version>
         </dependency>
         <dependency>
             <groupId>junit</groupId>
@@ -75,14 +80,29 @@
             <artifactId>guava</artifactId>
             <version>${guava.version}</version>
         </dependency>
-
     </dependencies>
     <build>
         <plugins>
             <plugin>
+                <groupId>org.apache.avro</groupId>
+                <artifactId>avro-maven-plugin</artifactId>
+                <version>${avro.version}</version>
+                <executions>
+                    <execution>
+                        <phase>generate-sources</phase>
+                        <goals>
+                            <goal>idl-protocol</goal>
+                        </goals>
+                        <configuration>
+                            <sourceDirectory>${project.basedir}/src/main/avro/</sourceDirectory>
+                            <outputDirectory>${project.basedir}/target/generated-sources/annotations/</outputDirectory>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.3</version>
                 <configuration>
                     <annotationProcessorPaths>
                         <path>
@@ -94,8 +114,7 @@
                     <compilerVersion>1.8</compilerVersion>
                     <source>1.8</source>
                     <target>1.8</target>
-                    <!-- Prevents an endPosTable exception during compilation -->
-                    <useIncrementalCompilation>false</useIncrementalCompilation>
+                    <generatedSourcesDirectory></generatedSourcesDirectory>
                 </configuration>
             </plugin>
             <plugin>

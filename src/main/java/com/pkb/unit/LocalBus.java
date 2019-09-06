@@ -2,8 +2,6 @@ package com.pkb.unit;
 
 import com.jakewharton.rxrelay2.PublishRelay;
 
-import com.pkb.unit.message.Message;
-
 import io.reactivex.Observable;
 import io.reactivex.functions.Consumer;
 

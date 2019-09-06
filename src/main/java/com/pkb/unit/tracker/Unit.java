@@ -27,7 +27,8 @@ public interface Unit {
 
     @Value.Check
     default Unit normalize() {
-        io.vavr.collection.List<String> dependencies = io.vavr.collection.List.ofAll(dependencies());
+        io.vavr.collection.List<String> dependencies = io.vavr.collection.List.ofAll(dependencies())
+                .map(String::valueOf);
         Comparator<String> comparator = Comparator.naturalOrder();
         if (Comparators.isInOrder(dependencies, comparator)) {
             return this;

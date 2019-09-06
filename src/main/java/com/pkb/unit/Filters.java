@@ -4,8 +4,6 @@ import static io.vavr.API.unchecked;
 
 import java.util.Objects;
 
-import com.pkb.unit.message.Message;
-
 import io.reactivex.Observable;
 import io.reactivex.functions.Function;
 import io.reactivex.functions.Predicate;
@@ -66,19 +64,14 @@ public class Filters {
 
     private static <T> Function<Message, T> extractPayload() {
         return msg ->
-            unchecked(() ->
-                (T)msg.payload().orElseThrow(() -> new IllegalStateException("no payload"))).get();
+            unchecked(() -> (T)msg.getPayload()).get();
     }
 
     private static Predicate<Message> targetFilter(String target) {
-        return msg ->
-            (Boolean)msg.target()
-                .map(msgTarget -> Objects.equals(msgTarget, target))
-                .orElse(true);
-
+        return msg -> msg.getTarget() == null || Objects.equals(msg.getTarget(), target);
     }
 
     private static Predicate<Message> payloadTypeFilter(Class payloadType) {
-        return msg -> msg.messageType().equals(payloadType);
+        return msg -> msg.getPayload().getClass().equals(payloadType);
     }
 }
