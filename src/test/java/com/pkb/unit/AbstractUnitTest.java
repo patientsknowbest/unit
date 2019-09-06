@@ -34,7 +34,8 @@ public class AbstractUnitTest {
 
     @Before
     public void setup() {
-        bus = new LocalBus();
+        //bus = new LocalBus();
+        bus = new PulsarBus("pulsar://localhost:46650", "persistent://tenant/pkb/defaultNS/TFNamespaceResponse", "bus");
         systemStateHistory = new ArrayList<>();
         trackerSubscription = Tracker.track(bus).subscribe(systemStateHistory::add);
     }

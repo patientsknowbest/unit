@@ -32,6 +32,7 @@
         <approvalcrest.version>0.21</approvalcrest.version>
         <guava.version>28.0-jre</guava.version>
         <revision>0.0.0-SNAPSHOT</revision>
+        <pulsar.version>2.4.1</pulsar.version>
         <avro.version>1.9.1</avro.version>
     </properties>
     <dependencies>
@@ -80,6 +81,23 @@
             <artifactId>guava</artifactId>
             <version>${guava.version}</version>
         </dependency>
+        <!-- // TODO: MFA - Remove this into a new module? -->
+        <dependency>
+            <groupId>org.apache.pulsar</groupId>
+            <artifactId>pulsar-client</artifactId>
+            <version>${pulsar.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.avro</groupId>
+            <artifactId>avro</artifactId>
+            <version>${avro.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.immutables</groupId>
+            <artifactId>gson</artifactId>
+            <version>2.7.4</version>
+        </dependency>
+        <!-- END TODO-->
     </dependencies>
     <build>
         <plugins>
@@ -103,6 +121,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.3</version>
                 <configuration>
                     <annotationProcessorPaths>
                         <path>
@@ -114,7 +133,8 @@
                     <compilerVersion>1.8</compilerVersion>
                     <source>1.8</source>
                     <target>1.8</target>
-                    <generatedSourcesDirectory></generatedSourcesDirectory>
+                    <!-- Prevents an endPosTable exception during compilation -->
+                    <useIncrementalCompilation>false</useIncrementalCompilation>
                 </configuration>
             </plugin>
             <plugin>
