@@ -1,2 +1,14 @@
-.idea/
+# Build artifacts
 target/
+
+# Intellij
+.idea/
+unit.iml
+
+# VS Code
+.classpath
+.factorypath
+.project
+.settings/
+settings.json
+.vscode/
