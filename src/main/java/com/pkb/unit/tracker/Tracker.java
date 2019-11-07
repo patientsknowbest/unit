@@ -33,6 +33,8 @@ public class Tracker {
     private Tracker() {}
 
     private static class RestartTracker implements ObservableSource<Boolean> {
+
+        private String id;
         private boolean hasStopped;
         private boolean hasStarted;
 
@@ -41,6 +43,7 @@ public class Tracker {
         private Observer<? super Boolean> observer;
 
         RestartTracker(Bus bus, String id) {
+            this.id = id;
             hasStopped = false;
             hasStarted = false;
             disposable = payloads(bus.events(), Transition.class, id)
@@ -48,6 +51,9 @@ public class Tracker {
         }
 
         private void onTransition(Transition x) {
+            if (!id.equals(x.unitId())) {
+                return;
+            }
             if (!hasStopped && x.current() == STOPPED) {
                 hasStopped = true;
             } else if (hasStopped && x.current() == STARTED) {
