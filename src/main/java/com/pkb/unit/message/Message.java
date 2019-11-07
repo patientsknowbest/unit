@@ -27,7 +27,7 @@ public interface Message<T> {
     Optional<T> payload();
 
     /**
-     * @return the intended recepient of this message
+     * @return the intended recipient of this message
      */
     Optional<String> target();
 }
