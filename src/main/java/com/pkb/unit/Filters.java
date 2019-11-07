@@ -15,6 +15,11 @@ import io.reactivex.functions.Predicate;
  */
 public class Filters {
 
+    public enum MessageInclusionBehaviour {
+        INCLUDE_UNTARGETED,
+        EXCLUDE_UNTARGETED
+    }
+
     private Filters() {}
 
     /**
@@ -27,8 +32,8 @@ public class Filters {
      * @return the Observable stream containing messages filtered by the given parameters
      */
     public static <T> Observable<Message> messages(Observable<Message> messages,
-                                               Class<T> payloadType,
-                                               String target) {
+                                                   Class<T> payloadType,
+                                                   String target) {
         return messages.filter(payloadTypeFilter(payloadType))
                 .filter(targetFilter(target));
     }
@@ -66,16 +71,27 @@ public class Filters {
 
     private static <T> Function<Message, T> extractPayload() {
         return msg ->
-            unchecked(() ->
-                (T)msg.payload().orElseThrow(() -> new IllegalStateException("no payload"))).get();
+                unchecked(() ->
+                        (T)msg.payload().orElseThrow(() -> new IllegalStateException("no payload"))).get();
     }
 
     private static Predicate<Message> targetFilter(String target) {
-        return msg ->
-            (Boolean)msg.target()
-                .map(msgTarget -> Objects.equals(msgTarget, target))
-                .orElse(true);
+        return targetFilter(target, MessageInclusionBehaviour.INCLUDE_UNTARGETED);
+    }
 
+    /**
+     * Predicate that checks whether the message's target matches the provided.
+     * @param target The provided target
+     * @param inclusionBehaviour Whether messages without target have to be included
+     * @return If the message's target matches the provided
+     */
+    @SuppressWarnings("unchecked")
+    private static Predicate<Message> targetFilter(String target, MessageInclusionBehaviour inclusionBehaviour) {
+
+        return msg ->
+                (Boolean)msg.target()
+                        .map(msgTarget -> Objects.equals(msgTarget, target))
+                        .orElse(inclusionBehaviour == MessageInclusionBehaviour.INCLUDE_UNTARGETED);
     }
 
     private static Predicate<Message> payloadTypeFilter(Class payloadType) {

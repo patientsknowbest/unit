@@ -11,6 +11,7 @@ import static java.util.function.Function.identity;
 import static java.util.stream.Collectors.toMap;
 
 import java.util.Map;
+import java.util.Objects;
 import java.util.TreeMap;
 
 import com.pkb.unit.Bus;
@@ -43,7 +44,8 @@ public class Tracker {
         RestartTracker(Bus bus, String id) {
             hasStopped = false;
             hasStarted = false;
-            disposable = payloads(bus.events(), Transition.class, id)
+            disposable = payloads(bus.events(), Transition.class)
+                    .filter(transition -> Objects.equals(transition.unitId(), id))
                     .subscribe(this::onTransition);
         }
 
