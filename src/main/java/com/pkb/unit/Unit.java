@@ -180,10 +180,10 @@ public abstract class Unit {
     }
 
     /**
-     * Access the ID of this unit
+     * Access the ID of this unit.
      * @return the unique identifier for the unit
      */
-    protected String id() {
+    public String id() {
         return id;
     }
 
