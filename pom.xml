@@ -33,6 +33,7 @@
         <approvalcrest.version>0.21</approvalcrest.version>
         <guava.version>28.0-jre</guava.version>
         <revision>0.0.0-SNAPSHOT</revision>
+        <maven-source-plugin.version>3.1.0</maven-source-plugin.version>
     </properties>
     <dependencies>
         <dependency>
@@ -102,6 +103,19 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
                 <version>3.0.0-M3</version>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-source-plugin</artifactId>
+                <version>${maven-source-plugin.version}</version>
+                <executions>
+                    <execution>
+                        <id>attach-sources</id>
+                        <goals>
+                            <goal>jar</goal>
+                        </goals>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>
