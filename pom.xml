@@ -24,6 +24,38 @@
     <groupId>com.pkb</groupId>
     <artifactId>unit</artifactId>
     <version>${revision}</version>
+
+    <name>Unit</name>
+    <description>A library for managing the lifecycle of application components.</description>
+    <url>https://github.com/patientsknowbest/unit</url>
+
+    <licenses>
+        <license>
+            <name>MIT License</name>
+            <url>http://www.opensource.org/licenses/mit-license.php</url>
+        </license>
+    </licenses>
+    <developers>
+      <developer>
+        <name>Bence Konya</name>
+        <email>bence.konya@patientsknowbest.com</email>
+        <organization>Patients Know Best</organization>
+	<organizationUrl>https://dev.patientsknowbest.com</organizationUrl>
+      </developer>
+      <developer>
+        <name>Martin Ashby</name>
+        <email>martin@patientsknowbest.com</email>
+        <organization>Patients Know Best</organization>
+	<organizationUrl>https://dev.patientsknowbest.com</organizationUrl>
+      </developer>
+    </developers>
+    <scm>
+      <connection>scm:git:git://github.com/patientsknowbest/unit.git</connection>
+      <developerConnection>scm:git:ssh://github.com:patientsknowbest/unit.git</developerConnection>
+      <url>http://github.com/patientsknowbest/unit/tree/master</url>
+    </scm>
+
+
     <properties>
         <immutables.version>2.7.4</immutables.version>
         <junit.version>4.12</junit.version>
