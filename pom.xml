@@ -21,7 +21,7 @@
 
 
     <modelVersion>4.0.0</modelVersion>
-    <groupId>com.pkb</groupId>
+    <groupId>io.pkb</groupId>
     <artifactId>unit</artifactId>
     <version>${revision}</version>
 
@@ -45,6 +45,12 @@
       <developer>
         <name>Martin Ashby</name>
         <email>martin@patientsknowbest.com</email>
+        <organization>Patients Know Best</organization>
+	<organizationUrl>https://dev.patientsknowbest.com</organizationUrl>
+      </developer>
+      <developer>
+        <name>Maté Varga</name>
+        <email>mate@patientsknowbest.com</email>
         <organization>Patients Know Best</organization>
 	<organizationUrl>https://dev.patientsknowbest.com</organizationUrl>
       </developer>
