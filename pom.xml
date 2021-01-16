@@ -4,21 +4,39 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 
     <profiles>
-        <!-- Use the current tag as the version on CI -->
         <profile>
-            <id>ci-build</id>
+            <id>ci</id>
             <activation>
-                <activeByDefault>false</activeByDefault>
-                <property>
-                    <name>env.TRAVIS_TAG</name>
-                </property>
+                <property><name>ci-server</name><value>true</value></property>
             </activation>
-            <properties>
-                <revision>${env.TRAVIS_TAG}</revision>
-            </properties>
+            <distributionManagement>
+                <repository>
+                    <id>artifact-registry</id>
+                    <url>https://europe-west2-maven.pkg.dev/infra-240614/main</url>
+                </repository>
+                <snapshotRepository>
+                    <id>artifact-registry</id>
+                    <url>https://europe-west2-maven.pkg.dev/infra-240614/main</url>
+                </snapshotRepository>
+            </distributionManagement>
+        </profile>
+        <profile>
+            <id>default</id>
+            <activation>
+                <activeByDefault>true</activeByDefault>
+            </activation>
+            <distributionManagement>
+                <repository>
+                    <id>artifact-registry</id>
+                    <url>artifactregistry://europe-west2-maven.pkg.dev/infra-240614/main</url>
+                </repository>
+                <snapshotRepository>
+                    <id>artifact-registry</id>
+                    <url>artifactregistry://europe-west2-maven.pkg.dev/infra-240614/main</url>
+                </snapshotRepository>
+            </distributionManagement>
         </profile>
     </profiles>
-
 
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.pkb</groupId>
@@ -111,6 +129,13 @@
 
     </dependencies>
     <build>
+        <extensions>
+            <extension>
+                <groupId>com.google.cloud.artifactregistry</groupId>
+                <artifactId>artifactregistry-maven-wagon</artifactId>
+                <version>2.1.1</version>
+            </extension>
+        </extensions>
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -168,11 +193,4 @@
 	    </plugin>
         </plugins>
     </build>
-    <distributionManagement>
-        <repository>
-            <id>bintray-patientsknowbest-patientsknowbest</id>
-            <name>patientsknowbest-patientsknowbest</name>
-            <url>https://api.bintray.com/maven/patientsknowbest/patientsknowbest/unit/;publish=1</url>
-        </repository>
-    </distributionManagement>
 </project>
