@@ -69,11 +69,11 @@ public class Tracker {
 
     /**
      * Creates an observable that emits 'true' when a given unit has transitioned from
-     * started -> stopped -> started. This can be useful to ensure that a restart
+     * started -&gt; stopped -&gt; started. This can be useful to ensure that a restart
      * has taken place when desired, and that the unit has returned to an available state.
      * @param bus the bus to observe for events
      * @param id the ID of the unit to be observed for a restart
-     * @return An observable, which emits true & completes when the desired unit has restarted.
+     * @return An observable, which emits true &amp; completes when the desired unit has restarted.
      */
     public static Observable<Boolean> unitRestarted(Bus bus, String id) {
         return Observable.wrap(new RestartTracker(bus, id));

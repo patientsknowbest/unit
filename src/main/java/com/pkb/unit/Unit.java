@@ -120,6 +120,7 @@ public abstract class Unit {
     /**
      * Adds a dependency to this unit.
      * This unit can only start if all its dependencies are started.
+     * @param dependency the ID of the additional unit to depend on
      */
     public void addDependency(String dependency) {
         mandatoryDependencies.put(dependency, Optional.empty());
@@ -133,6 +134,8 @@ public abstract class Unit {
 
     /**
      * Removes a dependency from this unit.
+     *
+     * @param dependency the ID of the dependent unit to remove dependency on
      */
     public void removeDependency(String dependency) {
         mandatoryDependencies.remove(dependency);

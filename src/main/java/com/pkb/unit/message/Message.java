@@ -7,7 +7,7 @@ import org.immutables.value.Value.Parameter;
 import org.immutables.value.Value.Style;
 
 /**
- * An event that can be sent to the {@link Bus} used for communication
+ * An event that can be sent to the {@link com.pkb.unit.Bus} used for communication
  * between units.
  * 
  * @param <T> the type of the message

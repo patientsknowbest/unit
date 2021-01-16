@@ -8,8 +8,8 @@ package com.pkb.unit;
  */
 public enum DesiredState {
     /**
-     * Enabled units will always try to be 'started'. They will initially move from created -> starting,
-     * and if they fail then they will move from failed -> starting after some cool off period.
+     * Enabled units will always try to be 'started'. They will initially move from created -&gt; starting,
+     * and if they fail then they will move from failed -&gt; starting after some cool off period.
      */
     ENABLED,
 
